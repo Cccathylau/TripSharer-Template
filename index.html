@@ -1,0 +1,2143 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>TripSharer</title>
+  <!-- BUILD:OG_START -->
+  <meta property="og:title" content="TripSharer">
+  <meta property="og:description" content="">
+  <meta property="og:image" content="">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <!-- BUILD:OG_END -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Noto+Serif+SC:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --cream: #faf7f2;
+      --ink: #1a1a1a;
+      --ink-soft: #6b6660;
+    }
+
+    body {
+      font-family: 'Noto Serif SC', 'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--cream);
+      color: var(--ink);
+    }
+
+    .notion-content h1 { font-size: 20px; font-weight: 700; margin: 16px 0 8px; }
+    .notion-content h2 { font-size: 16px; font-weight: 600; margin: 14px 0 6px; color: #1a1a1a; }
+    .notion-content h3 { font-size: 14px; font-weight: 600; margin: 10px 0 4px; }
+    .notion-content p  { font-family: 'Noto Serif SC', Georgia, 'PingFang SC', serif; font-size: 1em; line-height: 1.6; color: #333; margin-bottom: 6px; }
+    .notion-content ul, .notion-content ol { padding-left: 18px; margin-bottom: 6px; }
+    .notion-content li { font-family: 'Noto Serif SC', Georgia, 'PingFang SC', serif; font-size: 1em; line-height: 1.6; color: #333; margin-bottom: 2px; }
+    .notion-content hr { border: none; border-top: 1px solid #eee; margin: 12px 0; }
+    .notion-content :first-child { margin-top: 0; }
+
+    .empty-hint { font-size: 14px; color: #bbb; text-align: center; padding: 12px 0; }
+
+    /* ── 首屏 ── */
+    /* hero 区占满一个视口，header + 岛屿 + nav 三段竖排 */
+    .home-hero {
+      height: 94dvh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .home-header {
+      background: transparent;
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 3vh 24px 2vh;
+      text-align: center;
+      flex-shrink: 0;
+      animation: heroFadeIn 600ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    .home-header h1 {
+      font-family: 'Playfair Display', 'Noto Serif SC', 'PingFang SC', Georgia, serif;
+      font-size: clamp(28px, 4.4vw, 40px);
+      font-weight: 400;
+      letter-spacing: 0.01em;
+    }
+
+    /* 岛屿行：撑满剩余高度，min-height:0 允许 flex 收缩 */
+    .city-islands-row {
+      flex: 1;
+      min-height: 0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* 三岛内层容器：transform 居中保证溢出对称，不受 justify-content: center 退 start 影响 */
+    .city-islands-wrap {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      /* max-content 绕过 left:50% 触发的 shrink-to-fit（可用宽=50vw），取真实三岛总宽，保证 translateX(-50%) 对称 */
+      width: max-content;
+      transform: translate(-50%, -50%);
+      display: flex;
+      align-items: center;
+      gap: 6vw;
+    }
+
+    .city-island {
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      /* 每次渲染（包括 carousel 切换）都触发入场动画 */
+      animation: islandIn 450ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    .city-island svg { height: auto; display: block; pointer-events: none; }
+    .city-island polygon { pointer-events: all; }
+    .city-island-label {
+      font-family: 'Playfair Display', 'Noto Serif SC', 'PingFang SC', Georgia, serif;
+      font-size: 14px; font-style: italic; font-weight: 400;
+      font-synthesis: none;
+      letter-spacing: 0.02em; color: var(--ink);
+    }
+
+    /* 激活城市：居中大岛；‹ CityName › nav 嵌在岛内部 */
+    .city-island--active { gap: 28px; }
+    .city-island--active svg {
+      width: 74vw; max-width: 380px;
+      transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .city-island--active svg:hover { transform: scale(1.05); }
+    /* 去除 SVG 默认描边，填色由 JS 按 cityColors 控制 */
+    .city-island--active polygon { stroke: none; }
+
+    /* 两侧邻居：缩小、半透明，无城市名 */
+    .city-island--side { opacity: 0.55; }
+    .city-island--side svg { width: 24vw; max-width: 110px; }
+    .city-island--side polygon { stroke: none; }
+
+    /* 入场动画阶梯：中间岛先出现，两侧稍后 */
+    .city-island:nth-child(1) { animation-delay: 80ms; }
+    .city-island:nth-child(2) { animation-delay: 0ms; }
+    .city-island:nth-child(3) { animation-delay: 80ms; }
+
+    /* 超过 ±1 的城市隐藏 */
+    .city-island--hidden { display: none; }
+
+    /* carousel 切换：容器动画置 none（阻止 islandIn 带动 nav），svg 单独横向滑入 */
+    .city-island--sliding { animation: none; }
+    .city-island--sliding > svg {
+      animation: islandSlideIn 400ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    @keyframes islandSlideIn {
+      from { transform: translateX(calc(var(--slide-dir, 0) * 32px)); }
+      to   { transform: translateX(0); }
+    }
+
+    /* 城市导航：嵌在主岛内部，无独立底部行 */
+    .city-nav { display: inline-flex; align-items: center; gap: 14px; }
+
+    /* 手机端圆点导航器 */
+    .city-dots { display: none; gap: 8px; align-items: center; justify-content: center; }
+    .city-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--ink); opacity: 0.25;
+      border: none; cursor: pointer; padding: 0;
+      transition: opacity 0.25s; -webkit-tap-highlight-color: transparent;
+    }
+    .city-dot--active { opacity: 1; }
+    @media (hover: none) and (pointer: coarse) {
+      .city-nav-btn { display: none; }
+      .city-dots { display: flex; gap: 0; }
+      .city-dot {
+        width: 44px; height: 44px;
+        border-radius: 0;
+        background: transparent;
+        opacity: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .city-dot::after {
+        content: ''; display: block;
+        width: 7px; height: 7px;
+        border-radius: 50%;
+        background: var(--ink); opacity: 0.25;
+        transition: opacity 0.25s;
+      }
+      .city-dot--active::after { opacity: 1; }
+    }
+    .city-nav-btn {
+      background: none; border: none; cursor: pointer;
+      font-size: 24px; color: var(--ink-soft); padding: 4px 8px; line-height: 1;
+      -webkit-tap-highlight-color: transparent; transition: color 0.2s;
+    }
+    .city-nav-btn:hover { color: var(--ink); }
+    .city-nav-label {
+      font-family: 'Playfair Display', 'Noto Serif SC', 'PingFang SC', Georgia, serif;
+      font-size: 22px; font-style: italic; font-weight: 400; font-synthesis: none;
+      color: var(--ink); min-width: 120px; text-align: center;
+    }
+
+    /* 入场动画关键帧 */
+    @keyframes heroFadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    /* islandIn：只动 transform，opacity 由类规则决定（active=1，side=0.25），避免冲突 */
+    @keyframes islandIn {
+      from { transform: translateY(10px); }
+      to { transform: translateY(0); }
+    }
+
+    /* 滚动触发文字放大动效 */
+    .text-zoom-target { transform-origin: top center; }
+
+    .home-overview {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 0 24px 80px;
+      --zoom: 0.3;
+      min-height: 100dvh;
+    }
+
+    .home-overview .notion-content { text-align: center; }
+
+    /* overview 区块所有字号由 --zoom（0.3→1）等比联动 */
+    .overview-title {
+      font-family: 'Playfair Display', 'Noto Serif SC', 'PingFang SC', Georgia, serif;
+      font-size: calc(44px * var(--zoom)); font-weight: 700; font-style: italic;
+      font-synthesis: none; letter-spacing: 0.03em;
+      color: var(--ink); text-align: center;
+      padding: 12px 0 16px; margin-bottom: 20px;
+      border-bottom: 1px solid rgba(0,0,0,0.1);
+      cursor: pointer;
+      opacity: calc(0.5 + 0.5 * var(--zoom));
+      transition: letter-spacing 0.3s ease, border-bottom-color 0.3s, opacity 0.25s;
+    }
+    .overview-title:hover { letter-spacing: 0.1em; border-bottom-color: rgba(0,0,0,0.45); opacity: 1; }
+    .home-overview .notion-content h1 { font-size: calc(22px * var(--zoom)); }
+    .home-overview .notion-content h2 { font-size: calc(18px * var(--zoom)); }
+    .home-overview .notion-content h3 { font-size: calc(15px * var(--zoom)); }
+    .home-overview .notion-content p,
+    .home-overview .notion-content li { font-size: calc(16px * var(--zoom)); line-height: calc(1.6 * (0.6 + 0.4 * var(--zoom))); }
+
+    .notes-style-d {
+      text-align: center;
+    }
+    /* max-width 用 em，随字号等比缩放，每行字符数保持稳定 */
+    .notes-style-d p { max-width: 30em; margin: 0 auto; line-height: 1.85; }
+    /* 相邻段落之间自动插入圆点，Notion 里只需写段落即可 */
+    .notes-style-d p + p::before { content: '•'; display: block; font-size: calc(24px * var(--zoom)); color: var(--ink); margin: 20px 0; }
+    .notes-style-d hr { border: none; }
+    .notes-style-d h2, .notes-style-d h3 { display: none; }
+
+    .back-to-top {
+      position: fixed;
+      bottom: max(28px, calc(env(safe-area-inset-bottom) + 12px));
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 30;
+      width: 36px;
+      height: 36px;
+      border-radius: 0;
+      background: #1a1a1a;
+      border: none;
+      cursor: pointer;
+      color: #f5f0e8;
+      font-size: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      -webkit-tap-highlight-color: transparent;
+      opacity: 0;
+      pointer-events: none;
+      transition: background 0.2s, opacity 0.1s;
+    }
+    .back-to-top.visible { opacity: 1; pointer-events: auto; transition: background 0.2s, opacity 0.3s; }
+    .back-to-top:hover { background: #333; }
+
+    /* ── 城市页 ── */
+    #city-screen {
+      background: var(--cream);
+      min-height: 100dvh;
+    }
+
+    /* 浮动返回按钮 */
+    .floating-back {
+      position: fixed;
+      top: max(11px, calc(env(safe-area-inset-top) + 2px));
+      left: 18px;
+      z-index: 30;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--ink-soft);
+      padding: 8px;
+      font-size: 18px; line-height: 1;
+      -webkit-tap-highlight-color: transparent;
+      transition: color 0.2s;
+    }
+    .floating-back:hover { color: var(--ink); }
+
+    /* 城市页第一屏：铺满屏幕，flex 列布局 */
+    .city-hero {
+      height: 94dvh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* 地图区：3/4 屏高，留出城市名呼吸间距 */
+    .city-map-area {
+      position: relative;
+      width: 100%;
+      height: 75dvh;
+    }
+
+    #map { height: 100%; }
+    #map svg { display: block; width: 100%; height: 100%; cursor: grab; touch-action: none; }
+    #map svg:active { cursor: grabbing; }
+    /* pin hover：内层 g 放大，外层 g 只做坐标平移 */
+    .pin { cursor: pointer; transition: opacity 80ms ease; }
+    /* 聚类时隐藏成员 pin，用 opacity 过渡避免硬切换闪烁 */
+    .pin.pin-clustered { opacity: 0; pointer-events: none; }
+    .pin-inner { transition: transform 180ms ease, opacity 200ms ease; transform-box: fill-box; transform-origin: 50% 100%; }
+    .pin:hover .pin-inner { transform: scale(1.2); }
+    /* 选中态：pin 渐隐让卡片独占焦点 */
+    .pin--selected .pin-inner { opacity: 0; }
+    /* cluster 徽章 */
+    .cluster-marker { cursor: pointer; }
+    .cluster-marker:hover circle { fill: #333; transition: fill 180ms; }
+
+    /* 城市名：地图下方题注，Playfair italic 居中 */
+    .city-title {
+      font-family: 'Playfair Display', 'Noto Serif SC', 'PingFang SC', Georgia, serif;
+      font-size: 32px;
+      font-weight: 400;
+      font-style: italic;
+      font-synthesis: none;
+      letter-spacing: 0.02em;
+      text-align: center;
+      color: var(--ink);
+      padding: 16px 0 8px;
+      flex-shrink: 0;
+    }
+
+    /* 第二屏：镜像首屏 .home-overview，--zoom 驱动字号渐增 */
+    .city-overview {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 0 24px 80px;
+      --zoom: 0.3;
+      min-height: 100dvh;
+    }
+    .city-overview .notion-content { text-align: center; }
+    .city-overview .notion-content h1 { font-size: calc(22px * var(--zoom)); }
+    .city-overview .notion-content h2 { font-size: calc(18px * var(--zoom)); }
+    .city-overview .notion-content h3 { font-size: calc(15px * var(--zoom)); }
+    .city-overview .notion-content p,
+    .city-overview .notion-content li { font-size: calc(16px * var(--zoom)); line-height: calc(1.6 * (0.6 + 0.4 * var(--zoom))); }
+
+    /* 地点信息卡片：黑色旗帜形，从 pin 尖端向上展开 */
+    #place-popup {
+      position: absolute;
+      background: #1a1a1a;
+      padding: 16px 18px 38px;
+      z-index: 10;
+      width: 200px;
+      opacity: 0;
+      font-family: 'Noto Serif SC', serif;
+      /* 旗帜形：上矩形 + 下三角尖端，与 pin 形状语言一致 */
+      clip-path: polygon(0 0, 100% 0, 100% 82%, 50% 100%, 0 82%);
+      transform-origin: 50% 100%;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+    }
+    #place-popup.expanding {
+      animation: cardExpand 240ms cubic-bezier(.2,.7,.3,1) forwards;
+    }
+    @keyframes cardExpand {
+      from { opacity: 0; transform: scale(0.05); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+    .popup-name { font-size: 15px; font-weight: 700; color: #fff; margin-bottom: 4px; line-height: 1.3; }
+    .popup-note-row { margin-bottom: 8px; line-height: 1.3; }
+    .popup-shortnote { font-size: 13px; color: rgba(255,255,255,0.85); line-height: 1.3; }
+    .popup-meta { font-size: 12px; color: rgba(255,255,255,0.5); white-space: nowrap; }
+    .popup-desc { font-size: 12px; color: rgba(255,255,255,0.82); line-height: 1.55; margin-bottom: 10px; }
+    .popup-link { display: inline-block; font-size: 11px; color: rgba(255,255,255,0.5); text-decoration: none; }
+    .popup-link:hover { color: #fff; }
+
+    /* ── POI 列表面板 ── */
+    /* 地图右上角触发器：Playfair 斜体纯文字，hover 同 overview-title 效果 */
+    .poi-toggle {
+      position: absolute;
+      top: max(16px, calc(env(safe-area-inset-top) + 6px)); right: 16px;
+      z-index: 20;
+      font-family: 'Playfair Display', 'Noto Serif SC', serif;
+      font-style: italic;
+      font-size: 14px;
+      font-weight: 400;
+      font-synthesis: none;
+      letter-spacing: 0.06em;
+      color: var(--ink);
+      background: none;
+      border: none;
+      padding: 4px 8px;
+      cursor: pointer;
+      opacity: 0.55;
+      border-bottom: 1px solid transparent;
+      transition: letter-spacing 0.3s ease, opacity 0.25s, border-bottom-color 0.3s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .poi-toggle:hover { letter-spacing: 0.14em; opacity: 1; border-bottom-color: rgba(0,0,0,0.45); }
+    .poi-toggle[aria-expanded="true"] { letter-spacing: 0.14em; opacity: 1; border-bottom-color: rgba(0,0,0,0.45); }
+
+    /* 桌面端：右侧分栏，全高铺满地图区，薄左边线作分栏线 */
+    .poi-panel {
+      position: absolute;
+      top: 0; right: 0; bottom: 0;
+      width: 285px;
+      z-index: 35;
+      background: var(--cream);
+      border-left: 0.5px solid rgba(0,0,0,0.14);
+      display: flex;
+      flex-direction: column;
+      transform: translateX(100%);
+      transition: transform 320ms cubic-bezier(.22,1,.36,1);
+      overflow: hidden;
+    }
+    .poi-panel[data-open] { transform: translateX(0); }
+    /* hidden 属性被 author display:flex 覆盖，需显式强制 */
+    #poi-panel[hidden] { display: none; }
+
+    /* 移动端：全屏从底部滑入 */
+    @media (hover: none) and (pointer: coarse) {
+      .poi-panel {
+        position: fixed;
+        top: 0; right: 0; bottom: 0; left: 0;
+        width: auto;
+        border-left: none;
+        border-top: 0.5px solid rgba(0,0,0,0.14);
+        transform: translateY(100%);
+      }
+      .poi-panel[data-open] { transform: translateY(0); }
+      .poi-panel[data-half] { transform: translateY(calc(100% - 280px)); }
+      .poi-panel[data-half] .route-day:not(.route-day--active) { display: none; }
+      .poi-panel[data-half] .route-day-places { display: none; }
+      .poi-panel[data-half] .route-view {
+        flex: none;
+        max-height: calc(280px - 90px - env(safe-area-inset-top, 0px));
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+      .poi-panel-head { padding-top: calc(14px + env(safe-area-inset-top)); }
+      .poi-list { padding-bottom: env(safe-area-inset-bottom); }
+    }
+
+    /* 面板头部 */
+    .poi-panel-head {
+      flex-shrink: 0;
+      padding: 14px 16px 0;
+      border-bottom: 0.5px solid rgba(0,0,0,0.1);
+    }
+    .poi-panel-title {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .poi-panel-label {
+      font-family: 'Playfair Display', 'Noto Serif SC', serif;
+      font-style: italic;
+      font-size: 12px;
+      font-weight: 400;
+      font-synthesis: none;
+      letter-spacing: 0.12em;
+      color: var(--ink-soft);
+    }
+    .poi-panel-close {
+      background: none; border: none; cursor: pointer;
+      color: var(--ink-soft); padding: 6px 0 6px 14px;
+      font-size: 16px; line-height: 1;
+      transition: color 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .poi-panel-close:hover { color: var(--ink); }
+    .route-day-chevron {
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 14px; height: 14px;
+      font-size: 13px; line-height: 1;
+      color: var(--ink-soft);
+      transform: rotate(-90deg);
+      transition: transform 220ms ease;
+    }
+    .route-day--active .route-day-chevron { transform: rotate(90deg); }
+
+    /* 分类筛选：纯文字，hover 同 poi-toggle 效果，active 下划线用城市主题色 */
+    .poi-filter { display: flex; gap: 16px; padding-bottom: 11px; }
+    .poi-filter[hidden] { display: none; }
+    .poi-chip {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 11px; letter-spacing: 0.05em;
+      color: var(--ink);
+      background: none; border: none;
+      min-width: 36px; padding: 6px 0; text-align: left; cursor: pointer;
+      opacity: 0.45;
+      transition: letter-spacing 0.3s ease, opacity 0.25s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .poi-chip span {
+      border-bottom: 1px solid transparent;
+      padding-bottom: 3px;
+      transition: border-bottom-color 0.3s;
+    }
+    .poi-chip:hover { letter-spacing: 0.1em; opacity: 1; }
+    .poi-chip:hover span { border-bottom-color: rgba(0,0,0,0.45); }
+    .poi-chip.active { opacity: 1; letter-spacing: 0.08em; }
+    .poi-chip.active span { border-bottom-color: var(--poi-accent, #E85D4A); }
+
+    /* 列表滚动区 */
+    .poi-list {
+      flex: 1; overflow-y: auto; list-style: none;
+      overscroll-behavior: contain; scrollbar-width: none;
+    }
+    .poi-list::-webkit-scrollbar { display: none; }
+
+    /* 条目 */
+    .poi-item {
+      padding: 11px 16px;
+      border-bottom: 0.5px solid rgba(0,0,0,0.07);
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+    .poi-item:last-child { border-bottom: none; }
+    .poi-item:hover { background: rgba(0,0,0,0.022); }
+    /* active：名字变城市主题色 + 极浅底色区分 hover 与已选中 */
+    .poi-item--active { background: rgba(0,0,0,0.04); }
+    .poi-item--active .poi-item-name { color: var(--poi-accent, #E85D4A); }
+    .poi-item-name {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 13px; font-weight: 700;
+      color: var(--ink); line-height: 1.35;
+    }
+    .poi-item-note {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 11px; color: var(--ink-soft);
+      line-height: 1.45; margin-top: 2px;
+    }
+    .poi-item-rating { font-size: 10px; margin-top: 3px; letter-spacing: 0.02em; }
+    .poi-item-empty {
+      padding: 24px 16px; font-size: 12px;
+      color: var(--ink-soft); text-align: center;
+    }
+
+    /* 列表 hover 时 pin 放大高亮（不与 pin--selected opacity:0 冲突） */
+    .pin--list-hover .pin-inner { transform: scale(1.5); }
+
+    /* 探索 / 路线文字切换（内嵌标题行） */
+    .poi-mode-texts { display: flex; gap: 12px; align-items: baseline; }
+    .poi-mode-text {
+      font-family: 'Playfair Display', 'Noto Serif SC', serif;
+      font-style: italic; font-size: 12px; font-weight: 400;
+      font-synthesis: none; letter-spacing: 0.12em;
+      color: var(--ink-soft);
+      background: none; border: none; cursor: pointer; padding: 0;
+      opacity: 0.35;
+      transition: opacity 0.2s, letter-spacing 0.3s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .poi-mode-text.active { opacity: 1; cursor: default; }
+    .poi-mode-text:not(.active):hover { opacity: 0.8; letter-spacing: 0.18em; }
+
+    /* 路线视图容器 */
+    .route-view {
+      flex: 1; overflow-y: auto;
+      overscroll-behavior: contain; scrollbar-width: none;
+      touch-action: pan-y;
+    }
+    .route-view::-webkit-scrollbar { display: none; }
+    .route-day {
+      padding: 14px 16px;
+      border-bottom: 0.5px solid rgba(0,0,0,0.07);
+      cursor: default;
+      transition: background 0.1s;
+    }
+    .route-day:last-child { border-bottom: none; }
+    .route-day:hover { background: rgba(0,0,0,0.022); }
+    .route-day-label {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 12px; font-weight: 700;
+      color: var(--poi-accent, #E85D4A); margin-bottom: 4px; letter-spacing: 0.04em;
+    }
+    .route-day-places {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 11px; color: var(--ink-soft);
+      letter-spacing: 0.02em;
+      margin-bottom: 5px; line-height: 1.4;
+    }
+    .route-day-meta {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 10px; color: var(--ink-soft);
+      letter-spacing: 0.03em;
+      margin-bottom: 6px;
+      display: flex; align-items: flex-start; gap: 5px;
+    }
+    .route-meta-icon { flex-shrink: 0; }
+    .route-meta-sep { opacity: 0.35; }
+    .route-day-note + .route-day-places {
+      margin-top: 6px; padding-top: 6px;
+      border-top: 0.5px solid rgba(0,0,0,0.07);
+    }
+    .route-day-note {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 11px; color: var(--ink); line-height: 1.55;
+    }
+
+    .route-day-items { margin-top: 8px; padding-top: 6px; border-top: 0.5px solid rgba(0,0,0,0.08); }
+    .route-place-item {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 11px; color: var(--ink-soft);
+      padding: 6px 0; border-bottom: 0.5px solid rgba(0,0,0,0.06);
+      cursor: pointer; letter-spacing: 0;
+      transition: letter-spacing 160ms, opacity 160ms;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .route-place-item:last-child { border-bottom: none; }
+    .route-place-item:hover { letter-spacing: 0.03em; opacity: 0.65; }
+    .route-place-item--active { color: var(--poi-accent, #E85D4A); }
+    .route-place-arrow { flex-shrink: 0; opacity: 0.35; padding-left: 6px; font-size: 12px; line-height: 1; display: none; }
+    @media (hover: none) and (pointer: coarse) {
+      .route-place-arrow { display: inline-block; }
+    }
+
+    /* 路线模式：非当天 pin 变淡，当天 pin 放大 */
+    .pin--route-dim { opacity: 0.12; }
+    .pin--route-active .pin-inner { transform: scale(1.3); }
+
+    @media (hover: none) and (pointer: coarse) {
+      .poi-mode-text { font-size: 15px; padding: 8px 0; }
+      .route-day { padding: 16px 16px; }
+      .route-day-label { font-size: 15px; }
+      .route-day-places { font-size: 13px; }
+      .route-day-note { font-size: 13px; }
+    }
+
+    /* 移动端 POI 面板：字号放大 + 触控目标扩至 44px */
+    @media (hover: none) and (pointer: coarse) {
+      .poi-panel-label { font-size: 15px; }
+      .poi-panel-close { padding: 12px 0 12px 16px; }
+      .poi-filter { gap: 36px; }
+      .poi-chip { font-size: 13px; padding: 15px 0; }
+      .poi-item { padding: 16px 16px; }
+      .poi-item-name { font-size: 17px; }
+      .poi-item-note { font-size: 14px; }
+      .poi-item-rating { font-size: 13px; }
+    }
+  </style>
+</head>
+<body>
+  <!-- 首屏 -->
+  <div id="home-screen">
+    <div class="home-hero">
+      <div class="home-header">
+        <h1 id="trip-title">加载中...</h1>
+      </div>
+      <div class="city-islands-row" id="city-islands"></div>
+    </div>
+    <div class="home-overview" id="home-overview" style="display:none">
+      <h3 class="overview-title" id="overview-title"></h3>
+      <div class="notion-content" id="overview-content"></div>
+    </div>
+  </div>
+
+  <!-- 城市页 -->
+  <div id="city-screen" style="display:none">
+    <button id="back-btn" class="floating-back">&#8592;</button>
+    <div class="city-hero">
+      <div class="city-map-area">
+        <div id="map"></div>
+        <div id="place-popup" style="display:none"></div>
+        <button id="poi-toggle" class="poi-toggle" aria-expanded="false" aria-label="查看地点列表">列表</button>
+        <aside id="poi-panel" class="poi-panel" hidden>
+          <header class="poi-panel-head">
+            <div class="poi-panel-title">
+              <div class="poi-mode-texts">
+                <button class="poi-mode-text active" data-mode="explore">地点</button>
+                <button class="poi-mode-text" data-mode="route" id="route-mode-text" hidden>路线</button>
+              </div>
+              <button id="poi-panel-close" class="poi-panel-close" aria-label="关闭">&#10005;</button>
+            </div>
+            <div class="poi-filter" id="poi-filter" role="group" aria-label="分类筛选">
+              <button class="poi-chip active" data-cat="all"><span>全部</span></button>
+            </div>
+          </header>
+          <ul class="poi-list" id="poi-list"></ul>
+          <div class="route-view" id="route-view" hidden></div>
+        </aside>
+      </div>
+      <h2 class="city-title" id="city-name"></h2>
+    </div>
+    <div class="city-overview" id="city-overview">
+      <h3 class="overview-title" id="city-notes-title">攻略</h3>
+      <div class="notion-content" id="city-notes-content"></div>
+    </div>
+  </div>
+
+  <script type="module">
+    // 暂时所有标记统一用主题色，category 颜色待后续迭代
+
+    let appData = null
+    let svgReady = false
+    let currentCityKey = null
+    let homeCityIdx = 0
+    let lastDelta = 0
+    let mapApi = null
+    let poiActiveCat = 'all'
+    let poiActiveIdx = null
+    let poiPanelMode = 'explore'
+    const isPoiTouch = matchMedia('(hover: none) and (pointer: coarse)').matches
+
+    // hex 颜色加深 amount（0~1）
+    function darkenHex(hex, amount) {
+      const n = parseInt(hex.replace('#',''), 16)
+      const r = Math.max(0, (n >> 16) - Math.round(255 * amount))
+      const g = Math.max(0, ((n >> 8) & 0xff) - Math.round(255 * amount))
+      const b = Math.max(0, (n & 0xff) - Math.round(255 * amount))
+      return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('')
+    }
+
+    function getTripId() {
+      const p = new URLSearchParams(location.search)
+      if (p.get('trip')) return p.get('trip')
+      const m = location.pathname.match(/\/trips\/([^/]+)/)
+      return m ? m[1] : 'australia-2026'
+    }
+
+    // 将城市边界投影到 100×100 SVG，fillColor 来自 cityColors 配置，primaryColor 给标记点
+    function buildIslandSvg(boundary, places, primaryColor, fillColor) {
+      const SHAPE_FILL = fillColor || '#d4cfc8'
+      const SIZE = 100
+
+      if (!boundary || !boundary.length) return ''
+
+      const lats = boundary.map(p => p.lat)
+      const lngs = boundary.map(p => p.lng)
+      const minLat = Math.min(...lats), maxLat = Math.max(...lats)
+      const minLng = Math.min(...lngs), maxLng = Math.max(...lngs)
+      const avgLat = (minLat + maxLat) / 2
+      const lngScale = Math.cos(avgLat * Math.PI / 180)
+
+      const PAD = 8
+      const FIT = SIZE - PAD * 2
+      const latSpan = maxLat - minLat || 0.01
+      const lngSpan = (maxLng - minLng) * lngScale || 0.01
+      const scale = FIT / Math.max(latSpan, lngSpan)
+
+      const rawPts = boundary.map(p => ({
+        x: (p.lng - minLng) * lngScale * scale,
+        y: (maxLat - p.lat) * scale
+      }))
+
+      // 面积加权 centroid，让视觉重心对齐 viewBox 中心
+      let A = 0, cx = 0, cy = 0
+      for (let i = 0; i < rawPts.length - 1; i++) {
+        const p0 = rawPts[i], p1 = rawPts[i + 1]
+        const cross = p0.x * p1.y - p1.x * p0.y
+        A += cross; cx += (p0.x + p1.x) * cross; cy += (p0.y + p1.y) * cross
+      }
+      A *= 0.5
+      const centroidX = cx / (6 * A)
+      const centroidY = cy / (6 * A)
+
+      // 以 centroid 为圆心等比缩小，使形状恰好不超出 PAD 边界，质心始终在 (50,50)
+      const centeredPts = rawPts.map(p => ({ x: p.x - centroidX, y: p.y - centroidY }))
+      const maxExtent = Math.max(...centeredPts.flatMap(p => [Math.abs(p.x), Math.abs(p.y)]))
+      const fitScale = Math.min(1, (SIZE / 2 - 2) / maxExtent)
+
+      const polyPts = centeredPts.map(p =>
+        `${(p.x * fitScale + SIZE / 2).toFixed(2)},${(p.y * fitScale + SIZE / 2).toFixed(2)}`
+      ).join(' ')
+
+      return `<svg viewBox="0 0 ${SIZE} ${SIZE}" xmlns="http://www.w3.org/2000/svg">
+        <polygon points="${polyPts}" fill="${SHAPE_FILL}" stroke="#c8c4bc" stroke-width="1.5" stroke-linejoin="round"/>
+      </svg>`
+    }
+
+    // carousel 渲染：无限轮播，prev/active/next 三槽位始终对应真实城市（取模）
+    function renderHomeCarousel(cities) {
+      const n = cities.length
+      const primary = appData.theme?.primary || '#E85D4A'
+      const el = document.getElementById('city-islands')
+      el.innerHTML = ''
+      const wrap = document.createElement('div')
+      wrap.className = 'city-islands-wrap'
+      el.appendChild(wrap)
+
+      const slots = [
+        (homeCityIdx - 1 + n) % n,   // 左侧邻居
+        homeCityIdx,                   // 主岛
+        (homeCityIdx + 1) % n          // 右侧邻居
+      ]
+
+      slots.forEach((cityIdx, slotPos) => {
+        const dist = slotPos - 1   // -1 左 / 0 主 / +1 右
+        const cityKey = cities[cityIdx]
+        const label = appData.cityLabels?.[cityKey] || cityKey
+        const boundary = appData.cityBoundaries?.[cityKey] || []
+        const places = (appData.places || []).filter(p => p.city === cityKey && p.lat && p.lng)
+        const fillColor = appData.cityColors?.[cityKey] || primary
+        const island = document.createElement('div')
+        island.className = `city-island ${dist === 0 ? 'city-island--active' : 'city-island--side'}`
+        island.dataset.city = cityKey
+        if (lastDelta !== 0) {
+          island.classList.add('city-island--sliding')
+          island.style.setProperty('--slide-dir', lastDelta)
+        }
+
+        if (dist === 0) {
+          // 主岛：SVG + 内嵌 nav（桌面：‹ CityName ›；手机：CityName + 圆点）
+          const dotsHtml = cities.map((_, i) =>
+            `<button class="city-dot${i === homeCityIdx ? ' city-dot--active' : ''}" data-idx="${i}"></button>`
+          ).join('')
+          island.innerHTML = `${buildIslandSvg(boundary, null, null, fillColor)}
+            <div class="city-nav">
+              <button class="btn-prev city-nav-btn">&#8249;</button>
+              <span class="city-nav-label">${label}</span>
+              <button class="btn-next city-nav-btn">&#8250;</button>
+            </div>
+            <div class="city-dots">${dotsHtml}</div>`
+          // 点击 SVG 进入城市页（nav 区域不触发）
+          island.querySelector('svg').addEventListener('click', () => showScreen('city', cityKey))
+          island.querySelector('.btn-prev').addEventListener('click', e => { e.stopPropagation(); navigateCarousel(-1) })
+          island.querySelector('.btn-next').addEventListener('click', e => { e.stopPropagation(); navigateCarousel(1) })
+          // 圆点点击：跳到对应城市
+          island.querySelectorAll('.city-dot').forEach(dot => {
+            dot.addEventListener('click', e => {
+              e.stopPropagation()
+              const targetIdx = parseInt(dot.dataset.idx)
+              if (targetIdx !== homeCityIdx) navigateCarousel(targetIdx - homeCityIdx)
+            })
+          })
+        } else {
+          // 侧岛：只有 SVG，点击切换到该城市
+          island.innerHTML = buildIslandSvg(boundary, null, null, fillColor)
+          island.addEventListener('click', () => navigateCarousel(dist > 0 ? 1 : -1))
+        }
+
+        wrap.appendChild(island)
+      })
+    }
+
+    function navigateCarousel(delta) {
+      lastDelta = delta
+      const cities = Object.keys(appData.cityNotes)
+      homeCityIdx = (homeCityIdx + delta + cities.length) % cities.length
+      renderHomeCarousel(cities)
+    }
+
+    // 滚动驱动的文字由小放大（progress 0→1 对应 scale 0.85→1）
+    // overview-title 滚动放大：minPx（初始小标签）→ maxPx（第一层级）
+    function initTitleScrollZoom(el, minPx, maxPx, scrollContainer) {
+      if (!el) return
+      const update = () => {
+        const rect = el.getBoundingClientRect()
+        const vh = window.innerHeight
+        const progress = Math.min(1, Math.max(0, (vh - rect.top) / (vh * 0.7)))
+        el.style.fontSize = `${(minPx + (maxPx - minPx) * progress).toFixed(1)}px`
+      }
+      ;(scrollContainer || window).addEventListener('scroll', update, { passive: true })
+      update()
+    }
+
+    // 统一驱动 overview / city-overview 区块所有字号：写入 --zoom（0.3 → 1）；主导时禁掉 title 交互
+    const _scrollZoomInited = new Set()
+    function initOverviewScrollZoom(overviewEl, titleEl) {
+      if (!overviewEl || _scrollZoomInited.has(overviewEl)) return
+      _scrollZoomInited.add(overviewEl)
+      const update = () => {
+        const rect = overviewEl.getBoundingClientRect()
+        const vh = window.innerHeight
+        const progress = Math.min(1, Math.max(0, (vh - rect.top) / (vh * 0.7)))
+        overviewEl.style.setProperty('--zoom', (0.3 + 0.7 * progress).toFixed(3))
+        if (titleEl) titleEl.style.pointerEvents = progress > 0.9 ? 'none' : ''
+      }
+      window.addEventListener('scroll', update, { passive: true })
+      update()
+    }
+
+    function initTextZoom(el, scrollContainer) {
+      if (!el) return
+      el.classList.add('text-zoom-target')
+      const update = () => {
+        const rect = el.getBoundingClientRect()
+        const vh = window.innerHeight
+        const progress = Math.min(1, Math.max(0, (vh - rect.top) / (vh * 0.7)))
+        el.style.transform = `scale(${(0.85 + 0.15 * progress).toFixed(3)})`
+        el.style.opacity = (0.25 + 0.75 * progress).toFixed(3)
+      }
+      ;(scrollContainer || window).addEventListener('scroll', update, { passive: true })
+      update()
+    }
+
+    // 渲染首屏：carousel + 导航事件 + 滑动手势 + 概览文字
+    function renderHomeScreen(data) {
+      const cities = Object.keys(data.cityNotes)
+
+      renderHomeCarousel(cities)
+
+      // 手机端滑动切换城市（只绑定一次）
+      const rowEl = document.getElementById('city-islands')
+      let swipeStartX = 0, swipeStartY = 0, swipeLocked = null  // 'h'|'v'|null
+      rowEl.addEventListener('touchstart', e => {
+        swipeStartX = e.touches[0].clientX
+        swipeStartY = e.touches[0].clientY
+        swipeLocked = null
+      }, { passive: true })
+      // touchmove：首次超 5px 锁定方向；横向时阻断纵向 scroll，纵向时放行
+      rowEl.addEventListener('touchmove', e => {
+        if (swipeLocked === 'h') { e.preventDefault(); return }
+        if (swipeLocked === 'v') return
+        const dx = Math.abs(e.touches[0].clientX - swipeStartX)
+        const dy = Math.abs(e.touches[0].clientY - swipeStartY)
+        if (dx > 5 || dy > 5) swipeLocked = dx >= dy ? 'h' : 'v'
+        if (swipeLocked === 'h') e.preventDefault()
+      }, { passive: false })
+      rowEl.addEventListener('touchend', e => {
+        const dx = e.changedTouches[0].clientX - swipeStartX
+        if (Math.abs(dx) > 40 && swipeLocked !== 'v') navigateCarousel(dx < 0 ? 1 : -1)
+      }, { passive: true })
+
+      const overviewSection = document.getElementById('home-overview')
+      if (data.overview) {
+        document.getElementById('overview-title').textContent = data.overviewLabel || 'Overview'
+        document.getElementById('overview-content').innerHTML = data.overview
+        document.getElementById('overview-content').classList.add('notes-style-d')
+        overviewSection.style.display = ''
+        const overviewTitleEl = document.getElementById('overview-title')
+        initOverviewScrollZoom(overviewSection, overviewTitleEl)
+        overviewTitleEl.addEventListener('click', () => {
+          overviewSection.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        })
+      } else {
+        overviewSection.style.display = 'none'
+      }
+
+      // 滚动时首屏整体淡出（opacity 1 → 0.3）
+      const heroEl = document.querySelector('.home-hero')
+      window.addEventListener('scroll', () => {
+        const progress = Math.min(1, window.scrollY / window.innerHeight)
+        heroEl.style.opacity = (1 - 0.7 * progress).toFixed(3)
+      }, { passive: true })
+    }
+
+    const _backToTopBtn = document.querySelector('.back-to-top')
+    let _backToTopListener = null
+
+    // 切换首屏 / 城市页
+    function showScreen(screen, cityKey) {
+      const homeEl = document.getElementById('home-screen')
+      const cityEl = document.getElementById('city-screen')
+      homeEl.style.display = screen === 'home' ? '' : 'none'
+      cityEl.style.display = screen === 'city' ? '' : 'none'
+
+      if (screen === 'home') {
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+        if (_backToTopListener) window.removeEventListener('scroll', _backToTopListener)
+        _backToTopBtn.classList.remove('visible')
+        _backToTopListener = () => {
+          _backToTopBtn.classList.toggle('visible', window.scrollY > window.innerHeight * 0.7)
+        }
+        window.addEventListener('scroll', _backToTopListener, { passive: true })
+        // 重置 home overview --zoom（与 city overview 对称）
+        const homeOverviewEl = document.getElementById('home-overview')
+        if (homeOverviewEl && homeOverviewEl.style.display !== 'none') {
+          homeOverviewEl.style.setProperty('--zoom', '0.3')
+          _scrollZoomInited.delete(homeOverviewEl)
+          initOverviewScrollZoom(homeOverviewEl, document.getElementById('overview-title'))
+        }
+      }
+
+      if (screen === 'city') {
+        currentCityKey = cityKey
+        // 地图下方题注：城市名
+        document.getElementById('city-name').textContent = appData.cityLabels?.[cityKey] || cityKey
+
+        // 第二屏攻略正文
+        const _cnotesEl = document.getElementById('city-notes-content')
+        _cnotesEl.innerHTML = appData.cityNotes[cityKey] || '<p class="empty-hint">暂无内容</p>'
+        _cnotesEl.classList.add('notes-style-d')
+
+        // 重置 --zoom 并初始化滚动联动（Set 防重复绑定）
+        const cityOverviewEl = document.getElementById('city-overview')
+        cityOverviewEl.style.setProperty('--zoom', '0.3')
+        _scrollZoomInited.delete(cityOverviewEl)
+        const cityNotesTitleEl = document.getElementById('city-notes-title')
+        initOverviewScrollZoom(cityOverviewEl, cityNotesTitleEl)
+        cityNotesTitleEl.onclick = () => cityOverviewEl.scrollIntoView({ behavior: 'smooth', block: 'start' })
+
+        window.scrollTo({ top: 0, behavior: 'instant' })
+        _backToTopBtn.classList.remove('visible')
+        if (_backToTopListener) window.removeEventListener('scroll', _backToTopListener)
+        _backToTopListener = () => {
+          _backToTopBtn.classList.toggle('visible', window.scrollY > window.innerHeight * 0.7)
+        }
+        window.addEventListener('scroll', _backToTopListener, { passive: true })
+
+        if (!svgReady) {
+          initSvgMap(appData, cityKey)
+        } else {
+          switchSvgCity(cityKey)
+        }
+      }
+    }
+
+    const cityDataCache = {}
+    async function loadCityData(cityKey) {
+      if (cityDataCache[cityKey]) return cityDataCache[cityKey]
+      const d = await fetch(`data/${getTripId()}-${cityKey}.json`).then(r => r.json())
+      cityDataCache[cityKey] = d
+      return d
+    }
+
+    async function renderCityMapSVG(cityKey) {
+      const mapEl = document.getElementById('map')
+      const isMobileLoad = window.matchMedia('(hover: none) and (pointer: coarse)').matches
+      const isFirstLoad = isMobileLoad && !cityDataCache[cityKey]
+      mapEl.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:10px"><span style="color:#888;font-size:15px">地图加载中...</span>' + (isFirstLoad ? '<span style="color:#c0bcb8;font-size:11px;letter-spacing:0.05em">首次打开约需 5–10 秒</span>' : '') + '</div>'
+
+      const cityData = await loadCityData(cityKey)
+      const data = appData
+      const boundary = data.cityBoundaries?.[cityKey] || []
+      // 从实际 places 实时计算边界，避免预计算数据偏差（如 Brisbane cityPoiBounds 偏南）
+      const _cp = (data.places || []).filter(p => p.lat && p.lng && (p.city || '').toLowerCase().replace(/\s+/g, '') === cityKey)
+      const poiBounds = _cp.length ? { minLat: Math.min(..._cp.map(p => p.lat)), maxLat: Math.max(..._cp.map(p => p.lat)), minLng: Math.min(..._cp.map(p => p.lng)), maxLng: Math.max(..._cp.map(p => p.lng)) } : null
+
+      if (!boundary.length) {
+        mapEl.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#aaa">暂无地图数据</div>`
+        return
+      }
+
+      const cityColor = data.cityColors?.[cityKey] || data.theme?.primary || '#E85D4A'
+      const roads = cityData.cityRoads?.[cityKey] || { motorway: [], primary: [], secondary: [], tertiary: [] }
+      const water = cityData.cityWater?.[cityKey] || []
+      const clusterRoads = cityData.clusterRoads || {}
+      const primary = data.theme?.primary || '#E85D4A'
+
+      // 计算 bbox：边界多边形 + 全部地点（日游景点可能在行政边界外）
+      const allLats = [...boundary.map(p => p.lat), ..._cp.map(p => p.lat)]
+      const allLngs = [...boundary.map(p => p.lng), ..._cp.map(p => p.lng)]
+      const bbox = { minLat: Math.min(...allLats), maxLat: Math.max(...allLats), minLng: Math.min(...allLngs), maxLng: Math.max(...allLngs) }
+
+      // 用统一比例尺保持纵横比；cos(lat) 修正经度在高纬度的压缩
+      const SVG_W = 600, SVG_PAD = 50
+      const avgLat = (bbox.minLat + bbox.maxLat) / 2
+      const lngScale = Math.cos(avgLat * Math.PI / 180)
+      const mapScale = (SVG_W - SVG_PAD * 2) / ((bbox.maxLng - bbox.minLng) * lngScale)
+      const SVG_H = Math.round((bbox.maxLat - bbox.minLat) * mapScale + SVG_PAD * 2)
+      // 计算浏览器实际缩放系数（meet 模式），使描边在屏幕上保持统一粗细
+      const containerW = mapEl.clientWidth || SVG_W
+      const containerH = mapEl.clientHeight || SVG_H
+      const displayScale = Math.min(containerW / SVG_W, containerH / SVG_H)
+      const strokeW = +(2.5 / displayScale).toFixed(2)
+      const isMobile = window.matchMedia('(hover: none) and (pointer: coarse)').matches
+
+      // 投影函数（利用上方闭包变量）
+      function project(lat, lng) {
+        const x = SVG_PAD + (lng - bbox.minLng) * lngScale * mapScale
+        const y = SVG_PAD + (bbox.maxLat - lat) * mapScale
+        return [+x.toFixed(2), +y.toFixed(2)]
+      }
+
+      // POI 范围转 SVG viewBox（"镜头拉近"初始视图）
+      function getPoiViewBox() {
+        if (!poiBounds) return null
+        const [x0] = project(poiBounds.minLat, poiBounds.minLng)
+        const [x1, y1] = project(poiBounds.maxLat, poiBounds.maxLng)
+        const [, y0] = project(poiBounds.minLat, poiBounds.maxLng)
+        const w = Math.abs(x1 - x0), h = Math.abs(y0 - y1)
+        // 各自 10% 边距；最小视野取 POI 跨度×5 与 SVG_W/2 的较小值
+        // POI 集中时（如 Brisbane 全簇）可缩至城区级，分散时（Sydney 等）自动用 SVG_W/2 兜底
+        const padW = w * 0.10, padH = h * 0.10
+        const rawW = w + padW * 2, rawH = h + padH * 2
+        const minW = Math.min(SVG_W / 2, Math.max(rawW * 5, SVG_W / 10))
+        const finalW = Math.max(rawW, minW)
+        const finalH = Math.max(rawH, finalW * SVG_H / SVG_W)
+        const cx = x0 + w / 2, cy = y1 + h / 2
+        return { x: cx - finalW / 2, y: cy - finalH / 2, w: finalW, h: finalH }
+      }
+
+      // 初始视图：有 POI 范围则拉近，否则全屏
+      const initVbRaw = getPoiViewBox()
+      const initVb = initVbRaw ? { x: initVbRaw.x, y: initVbRaw.y, w: initVbRaw.w, h: initVbRaw.h } : { x: 0, y: 0, w: SVG_W, h: SVG_H }
+
+      function ptsToD(pts) {
+        return pts.map(([lat, lng], i) => {
+          const [x, y] = project(lat, lng)
+          return (i === 0 ? `M${x} ${y}` : `L${x} ${y}`)
+        }).join(' ')
+      }
+
+      // 按城市名过滤地点（归一化后匹配），避免 bbox 重叠时把他城市地点误纳入
+      const places = data.places.filter(p =>
+        p.lat && p.lng && (p.city || '').toLowerCase().replace(/\s+/g, '') === cityKey
+      )
+      // 预算 SVG 坐标，避免 applyVb 每帧重调 project()
+      places.forEach(p => { const [x, y] = project(p.lat, p.lng); p._x = x; p._y = y })
+
+      // 城市轮廓 polygon points
+      const boundaryPts = boundary.map(p => {
+        const [x, y] = project(p.lat, p.lng)
+        return `${x},${y}`
+      }).join(' ')
+
+      // 判断 POI 是否需要圆形 buffer：在 admin polygon 外且离最近边界点 > 2km（排除海岸精度噪声）
+      function pipCheck(lat, lng, poly) {
+        let inside = false
+        for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+          const xi = poly[i].lng, yi = poly[i].lat, xj = poly[j].lng, yj = poly[j].lat
+          if (((yi > lat) !== (yj > lat)) && (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi))
+            inside = !inside
+        }
+        return inside
+      }
+      function distToPolyKm(lat, lng, poly) {
+        const cos = Math.cos(lat * Math.PI / 180)
+        return Math.min(...poly.map(p => Math.hypot((p.lat - lat) * 111, (p.lng - lng) * 111 * cos)))
+      }
+      const OUTLIER_KM = 2
+
+      // 只对真正的远郊境外 POI 加 2km 圆形 buffer（16 边多边形近似）
+      // 合并为单个 <path> 的多段 subpath，避免多子元素触发 Safari alpha mask 栅格化
+      const POI_RADIUS_M = 2000
+      const _avgLat = (bbox.minLat + bbox.maxLat) / 2
+      const _cos = Math.cos(_avgLat * Math.PI / 180)
+      const _dLat = POI_RADIUS_M / 111000
+      const _dLng = POI_RADIUS_M / (111000 * _cos)
+      const poiCirclesD = places
+        .filter(p => !pipCheck(p.lat, p.lng, boundary) && distToPolyKm(p.lat, p.lng, boundary) > OUTLIER_KM)
+        .map(p => {
+          const pts = Array.from({ length: 16 }, (_, i) => {
+            const a = (2 * Math.PI * i) / 16
+            const [x, y] = project(p.lat + Math.sin(a) * _dLat, p.lng + Math.cos(a) * _dLng)
+            return `${x.toFixed(2)},${y.toFixed(2)}`
+          })
+          return 'M ' + pts.join(' L ') + ' Z'
+        }).join(' ')
+      const clipPathD = 'M ' + boundaryPts.split(' ').join(' L ') + ' Z' + (poiCirclesD ? ' ' + poiCirclesD : '')
+
+      // 路段数组保留在闭包，d 属性由 updateRoads() 动态填入
+      const residential = cityData.cityResidential?.[cityKey] || []
+
+      // 水域：海湾/海峡/潟湖填页面底色（制造海岸线缺口效果），内陆水体填蓝色
+      const CREAM = '#faf7f2'
+      const waterSvg = water.map(({ area, oceanic, pts }) => {
+        const d = ptsToD(pts)
+        if (!area) return `<path d="${d}" fill="none" stroke="#a8c8d8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`
+        return `<path d="${d} Z" fill="#a8c8d8"/>`
+      }).join('')
+
+      // 旗帜形 pin：低 zoom 等比例缩放，高 zoom 软上限（applyVb 里处理）
+      // 编号留给 Route Toggle 功能
+      const markersSvg = places.map((place, idx) => {
+        const [x, y] = project(place.lat, place.lng)
+        return `<g class="pin" data-idx="${idx}" data-svgx="${x.toFixed(2)}" data-svgy="${y.toFixed(2)}" data-cluster="${place.clusterId || ''}" transform="translate(${x.toFixed(2)} ${y.toFixed(2)})">
+          <g class="pin-inner">
+            <circle cx="0" cy="-2.1" r="3.5" fill="transparent"/>
+            <path d="M-1.8 -4.2 H1.8 V-1.2 L0 0 L-1.8 -1.2 Z" style="fill:#1a1a1a"/>
+            <circle cx="0" cy="-2.7" r="0.5" fill="${CREAM}"/>
+          </g>
+        </g>`
+      }).join('')
+
+      mapEl.innerHTML = `
+        <svg viewBox="0 0 ${SVG_W} ${SVG_H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%">
+          <defs>
+            <clipPath id="city-clip">
+              <path d="${clipPathD}"/>
+            </clipPath>
+          </defs>
+
+          <!-- 城市外透明，让奶油页面底色透过 -->
+          <rect width="${SVG_W}" height="${SVG_H}" fill="transparent"/>
+
+          <!-- 城市内填充城市主题色（裁剪到边界内） -->
+          <rect width="${SVG_W}" height="${SVG_H}" fill="${cityColor}" clip-path="url(#city-clip)"/>
+
+          <!-- 水域（裁剪到边界内） -->
+          <g clip-path="url(#city-clip)">${waterSvg}</g>
+
+          <!-- 路网：白色街道通道，round 描边消除锯齿，放大后产生街区挤压感 -->
+          <g clip-path="url(#city-clip)" fill="none">
+            <path class="r-det" stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round"/>
+            <path class="r-res" stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round"/>
+            <path class="r-ter" stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round"/>
+            <path class="r-sec" stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round"/>
+            <path class="r-pri" stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round"/>
+            <path class="r-mot" stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round"/>
+          </g>
+
+          <!-- 城市轮廓无描边，边界自然消融进页面底色 -->
+          <polygon points="${boundaryPts}" fill="none" stroke="none"/>
+
+          <!-- 地点标记 + cluster 徽章层（动态填充） -->
+          ${markersSvg}
+          <g id="cluster-layer"></g>
+        </svg>
+      `
+
+      // ========== 缩放/平移交互 ==========
+      const svg = mapEl.querySelector('svg')
+      const rDet = svg.querySelector('.r-det')
+      const rRes = svg.querySelector('.r-res')
+      const rTer = svg.querySelector('.r-ter')
+      const rSec = svg.querySelector('.r-sec')
+      const rPri = svg.querySelector('.r-pri')
+      const rMot = svg.querySelector('.r-mot')
+      const clusterLayer = svg.querySelector('#cluster-layer')
+      let mapVb = { x: 0, y: 0, w: SVG_W, h: SVG_H }
+      let zoomedClusterId = null
+      let lastClusterVb = null   // 内层簇视口（或唯一层）
+      let prevClusterVb = null   // 外层簇视口，供两层嵌套时退回
+      let _animRaf = null       // 当前动画帧句柄，防多次点击叠加
+
+      // SVG 坐标 → lat/lng 逆投影
+      function unproject(svgX, svgY) {
+        const lat = bbox.maxLat - (svgY - SVG_PAD) / mapScale
+        const lng = bbox.minLng + (svgX - SVG_PAD) / (lngScale * mapScale)
+        return { lat, lng }
+      }
+
+      // 当前 viewBox 对应的地理范围（pad 倍扩展，避免边缘路段突然消失）
+      function getVpBounds(pad = 0.3) {
+        const tl = unproject(mapVb.x - mapVb.w * pad, mapVb.y - mapVb.h * pad)
+        const br = unproject(mapVb.x + mapVb.w * (1 + pad), mapVb.y + mapVb.h * (1 + pad))
+        return { minLat: br.lat, maxLat: tl.lat, minLng: tl.lng, maxLng: br.lng }
+      }
+
+      // LOD + 视口过滤：按缩放倍数决定显示哪些层，只渲染落在视口内的路段
+      function updateRoads() {
+        const zoom = SVG_W / mapVb.w
+        const vp = getVpBounds(0.3)
+        const filterD = (segs, show) => {
+          if (!show || !segs?.length) return ''
+          return segs
+            .filter(pts => pts.some(([lat, lng]) =>
+              lat >= vp.minLat && lat <= vp.maxLat && lng >= vp.minLng && lng <= vp.maxLng
+            ))
+            .map(pts => ptsToD(pts)).join(' ')
+        }
+        // motorway 始终全量渲染（~600条），不做视口过滤，避免平移/缩放时路段消失闪烁
+        const allD = segs => segs?.length ? segs.map(pts => ptsToD(pts)).join(' ') : ''
+        // 地点级聚类路网：放大到地点时（viewBox < 25 SVG 单位，约 2.5km）显示完整街道网格
+        const isDetail = !!(zoomedClusterId && mapVb.w < 25)
+        rDet.setAttribute('d', filterD(clusterRoads[zoomedClusterId] || [], isDetail))
+        // 渐进式 LOD：低 zoom 只见主动脉，逐级放大才浮出次级路网
+        const resThreshold = 5
+        rMot.setAttribute('d', allD(roads.motorway))
+        rPri.setAttribute('d', filterD(roads.primary, zoom >= 1.5))
+        rSec.setAttribute('d', filterD(roads.secondary, zoom >= 2.5))
+        rTer.setAttribute('d', filterD(roads.tertiary, zoom >= 4))
+        rRes.setAttribute('d', filterD(residential, !isDetail && zoom >= resThreshold))
+      }
+
+      // 应用 viewBox，强制约束范围，同步更新路网描边粗细
+      function applyVb(x, y, w, h) {
+        // 最小视口 = 0.3km（地理），不低于 1.5 SVG 单位，与 zoomToCluster 0.4km floor 对齐，防极密簇无法解散
+        const MIN_W = Math.max(0.3 * mapScale / 111, 1.5)
+        w = Math.max(MIN_W, Math.min(SVG_W, w))
+        h = w * SVG_H / SVG_W
+        x = Math.max(0, Math.min(SVG_W - w, x))
+        y = Math.max(0, Math.min(SVG_H - h, y))
+        mapVb = { x, y, w, h }
+        svg.setAttribute('viewBox', `${x.toFixed(2)} ${y.toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)}`)
+        // 描边 + 图标反向缩放：displayScale 归一化，消除桌面/手机差异
+        const zoom = SVG_W / w
+        // 移动端 cap=10 细线；桌面端 cap=8 介于原值与移动端之间
+        const zoomCap = Math.min(zoom, isMobile ? 10 : 8)
+        const baseScale = 1 / (displayScale * zoomCap)
+        rDet.setAttribute('stroke-width', ((isMobile ? 0.8 : 1.0)  * baseScale).toFixed(3))
+        rRes.setAttribute('stroke-width', ((isMobile ? 0.3 : 0.4)  * baseScale).toFixed(3))
+        rTer.setAttribute('stroke-width', ((isMobile ? 0.4 : 0.5)  * baseScale).toFixed(3))
+        rSec.setAttribute('stroke-width', ((isMobile ? 0.5 : 0.65) * baseScale).toFixed(3))
+        rPri.setAttribute('stroke-width', ((isMobile ? 0.7 : 0.9)  * baseScale).toFixed(3))
+        rMot.setAttribute('stroke-width', ((isMobile ? 1.0 : 1.25) * baseScale).toFixed(3))
+        // pin 双向 clamp：低 zoom 撑到 MIN_PX 保点击可达，高 zoom 压到 MAX_PX 避免占屏
+        const PIN_PATH_H = 4.2
+        const MIN_PX = 26, MAX_PX = 32
+        const naturalPx = PIN_PATH_H * displayScale * SVG_W / w
+        const targetPx = Math.min(MAX_PX, Math.max(MIN_PX, naturalPx))
+        const pinScale = targetPx / naturalPx
+        svg.querySelectorAll('.pin').forEach(m => {
+          m.setAttribute('transform', `translate(${m.dataset.svgx} ${m.dataset.svgy}) scale(${pinScale.toFixed(3)})`)
+        })
+
+        // ======== 动态聚类：每帧基于当前屏幕距离重新计算 ========
+        {
+          const containerPxW = displayScale * SVG_W
+          const CLUSTER_PX = 38  // pin 视觉宽 26-32px，< 38px 即视觉重叠（与城市无关的感知常数）
+          const thresholdSvg = CLUSTER_PX * w / containerPxW
+
+          // union-find：O(n²)，n≤10 时可忽略；保证传递闭包正确合并
+          const uf = places.map((_, i) => i)
+          const ufFind = i => uf[i] === i ? i : (uf[i] = ufFind(uf[i]))
+          for (let i = 0; i < places.length; i++)
+            for (let j = i + 1; j < places.length; j++)
+              if (Math.hypot(places[j]._x - places[i]._x, places[j]._y - places[i]._y) < thresholdSvg)
+                uf[ufFind(i)] = ufFind(j)
+
+          // 按 root 分组
+          const groups = {}
+          places.forEach((_, i) => { const r = ufFind(i); (groups[r] = groups[r] || []).push(i) })
+
+          // 分组签名——仅分组变化时重渲染，其余只更新 scale（避免动画期 60fps innerHTML）
+          const sig = Object.keys(groups).sort().map(r => `${r}:${groups[r].join(',')}`).join('|')
+          if (sig !== clusterLayer.dataset.sig) {
+            clusterLayer.dataset.sig = sig
+            const clusterData = []
+            const visibleSet = new Set()
+            Object.values(groups).forEach(indices => {
+              if (indices.length < 2) { visibleSet.add(indices[0]); return }
+              // 若组内所有 pin 均为 route-active，全部单独显示，不生成 cluster badge
+              const allRouteActive = indices.every(k => svg.querySelector(`.pin[data-idx="${k}"]`)?.classList.contains('pin--route-active'))
+              if (allRouteActive) { indices.forEach(k => visibleSet.add(k)); return }
+              const cx = indices.reduce((s, k) => s + places[k]._x, 0) / indices.length
+              const cy = indices.reduce((s, k) => s + places[k]._y, 0) / indices.length
+              let maxDist = 0
+              for (let a = 0; a < indices.length; a++)
+                for (let b = a + 1; b < indices.length; b++) {
+                  const d = Math.hypot(places[indices[a]]._x - places[indices[b]]._x, places[indices[a]]._y - places[indices[b]]._y)
+                  maxDist = Math.max(maxDist, d)
+                }
+              clusterData.push({ cx, cy, maxDist, indices })
+            })
+            clusterLayer.innerHTML = clusterData.map((g, ci) =>
+              `<g class="cluster-marker" data-ci="${ci}" data-svgcx="${g.cx.toFixed(2)}" data-svgcy="${g.cy.toFixed(2)}" transform="translate(${g.cx.toFixed(2)} ${g.cy.toFixed(2)}) scale(${pinScale.toFixed(3)})">
+                <circle r="2.4" fill="#1a1a1a"/>
+                <text y="0.9" text-anchor="middle" font-size="2.6" fill="${CREAM}" font-family="'Noto Serif SC', serif" font-weight="700">${g.indices.length}</text>
+              </g>`).join('')
+            clusterLayer._clusterData = clusterData
+            svg.querySelectorAll('.pin').forEach(pin => {
+              // route-active pin 始终穿透聚合显示
+              const forceVisible = pin.classList.contains('pin--route-active')
+              pin.classList.toggle('pin-clustered', !visibleSet.has(parseInt(pin.dataset.idx)) && !forceVisible)
+            })
+          } else {
+            // 分组未变，仅同步徽章 scale
+            clusterLayer.querySelectorAll('.cluster-marker').forEach(m => {
+              m.setAttribute('transform', `translate(${m.dataset.svgcx} ${m.dataset.svgcy}) scale(${pinScale.toFixed(3)})`)
+            })
+          }
+        }  // end 动态聚类
+
+        // 每帧同步卡片位置，使卡片随 pin 跟随缩放/平移动画
+        const popupEl = document.getElementById('place-popup')
+        if (popupEl && popupEl.style.display !== 'none' && popupEl.dataset.svgx) {
+          const pSvgX = parseFloat(popupEl.dataset.svgx)
+          const pSvgY = parseFloat(popupEl.dataset.svgy)
+          const pH = parseFloat(popupEl.dataset.popupH)
+          const pW = parseFloat(popupEl.dataset.popupW) || 236
+          const mW = mapEl.clientWidth, mH = mapEl.clientHeight
+          // SVG preserveAspectRatio=meet：按 min 比例铺满 + 居中留白，需还原 letterbox 偏移
+          const sc = Math.min(mW / SVG_W, mH / SVG_H)
+          const dispW = SVG_W * sc, dispH = SVG_H * sc
+          const pScreenX = (mW - dispW) / 2 + (pSvgX - x) / w * dispW
+          const pScreenY = (mH - dispH) / 2 + (pSvgY - y) / h * dispH
+          popupEl.style.left = `${Math.max(8, Math.min(pScreenX - pW / 2, mW - pW - 8))}px`
+          popupEl.style.top = `${Math.max(8, pScreenY - pH)}px`
+        }
+      }
+
+      // ease-out 动画过渡到目标 viewBox，结束时更新路网
+      function animateVb(tx, ty, tw, th) {
+        if (_animRaf) { cancelAnimationFrame(_animRaf); _animRaf = null }
+        const s = { ...mapVb }, t0 = performance.now()
+        ;(function tick(now) {
+          const p = Math.min(1, (now - t0) / 280)
+          const ease = 1 - Math.pow(1 - p, 3)
+          applyVb(s.x + (tx - s.x) * ease, s.y + (ty - s.y) * ease, s.w + (tw - s.w) * ease, s.h + (th - s.h) * ease)
+          if (p < 1) _animRaf = requestAnimationFrame(tick)
+          else {
+            _animRaf = null
+            applyVb(tx, ty, tw, th); updateRoads()
+          }
+        })(t0)
+      }
+
+      // 屏幕坐标 → 当前 SVG 坐标
+      function toSvgPt(clientX, clientY, ctm) {
+        const p = svg.createSVGPoint()
+        p.x = clientX; p.y = clientY
+        return p.matrixTransform(ctm || svg.getScreenCTM().inverse())
+      }
+
+      // 点击地点标记：放大到约 1.5km 视口
+      // 远处点击：鼠标锚定（pin 屏幕位置不动，地图在周围放大）
+      // 已在目标缩放级别：平滑居中到新 pin
+      function zoomToMarker(svgX, svgY, clusterId) {
+        zoomedClusterId = clusterId || null
+        const tw = Math.min(SVG_W / 2, 1.5 * mapScale / 111)
+        const th = tw * SVG_H / SVG_W
+        let tx, ty, fw, fh
+        if (lastClusterVb !== null || mapVb.w <= tw * 1.1) {
+          // 簇展开后或已在目标缩放级别：居中，且不缩出（若当前比目标更深则保持当前 zoom）
+          fw = Math.min(mapVb.w, tw)
+          fh = fw * SVG_H / SVG_W
+          tx = Math.max(0, Math.min(SVG_W - fw, svgX - fw / 2))
+          ty = Math.max(0, Math.min(SVG_H - fh, svgY - fh / 2))
+        } else {
+          // 远处初次放大：簇内 pin 保存簇级视口，独立 pin 保存全景
+          if (lastClusterVb === null) {
+            if (clusterId) {
+              // 用同簇 places 算出簇级视口（与 zoomToCluster 同一套公式）
+              const cp = places.filter(p => p.clusterId === clusterId)
+              if (cp.length >= 2) {
+                let maxDist = 0
+                for (let a = 0; a < cp.length; a++)
+                  for (let b = a + 1; b < cp.length; b++)
+                    maxDist = Math.max(maxDist, Math.hypot(cp[b]._x - cp[a]._x, cp[b]._y - cp[a]._y))
+                const cx = cp.reduce((s, p) => s + p._x, 0) / cp.length
+                const cy = cp.reduce((s, p) => s + p._y, 0) / cp.length
+                const cw = Math.min(SVG_W / 2, Math.max(maxDist * 3, 0.4 * mapScale / 111))
+                const ch = cw * SVG_H / SVG_W
+                lastClusterVb = {
+                  x: Math.max(0, Math.min(SVG_W - cw, cx - cw / 2)),
+                  y: Math.max(0, Math.min(SVG_H - ch, cy - ch / 2)),
+                  w: cw, h: ch
+                }
+              } else {
+                lastClusterVb = { ...mapVb }
+              }
+            } else {
+              lastClusterVb = { ...mapVb }
+            }
+          }
+          fw = tw; fh = th
+          tx = Math.max(0, Math.min(SVG_W - fw, svgX - fw / 2))
+          ty = Math.max(0, Math.min(SVG_H - fh, svgY - fh / 2))
+        }
+        animateVb(tx, ty, fw, fh)
+        return { x: tx, y: ty, w: fw, h: fh }
+      }
+
+      // 缩放到 cluster 中心，视口宽 = max(成员跨度×3, 0.4km)，确保解散后清晰可见；floor 0.4km 防单点/极密簇退化
+      function zoomToCluster(g) {
+        const tw = Math.min(SVG_W / 2, Math.max(g.maxDist * 3, 0.4 * mapScale / 111))
+        const th = tw * SVG_H / SVG_W
+        const tx = Math.max(0, Math.min(SVG_W - tw, g.cx - tw / 2))
+        const ty = Math.max(0, Math.min(SVG_H - th, g.cy - th / 2))
+        animateVb(tx, ty, tw, th)
+        prevClusterVb = lastClusterVb  // 保存上一层（外层簇），供退出时分步返回
+        lastClusterVb = { x: tx, y: ty, w: tw, h: th }
+        zoomedClusterId = null
+      }
+
+      // 鼠标拖动（桌面端）
+      let drag = null, lastDragMoved = false
+      svg.addEventListener('mousedown', e => {
+        if (e.button !== 0) return
+        const ctm = svg.getScreenCTM().inverse()
+        drag = { pt: toSvgPt(e.clientX, e.clientY, ctm), vb: { ...mapVb }, ctm, moved: false }
+        svg.style.cursor = 'grabbing'
+      })
+      window.addEventListener('mousemove', e => {
+        if (!drag) return
+        const p = toSvgPt(e.clientX, e.clientY, drag.ctm)
+        const dx = p.x - drag.pt.x, dy = p.y - drag.pt.y
+        if (Math.hypot(dx, dy) > 3) drag.moved = true
+        if (drag.moved) applyVb(drag.vb.x - dx, drag.vb.y - dy, drag.vb.w, drag.vb.h)
+      })
+      window.addEventListener('mouseup', () => {
+        if (drag) { lastDragMoved = drag.moved; drag = null; svg.style.cursor = 'grab'; updateRoads() }
+      })
+
+      // 鼠标滚轮缩放（桌面端，停止后 150ms 更新路网）
+      let wheelTimer = null
+      svg.addEventListener('wheel', e => {
+        e.preventDefault()
+        const f = e.deltaY > 0 ? 1.15 : 1 / 1.15
+        const nw = Math.max(SVG_W / 8, Math.min(SVG_W, mapVb.w * f))
+        const nh = nw * SVG_H / SVG_W
+        const p = toSvgPt(e.clientX, e.clientY)
+        applyVb(p.x - (p.x - mapVb.x) * nw / mapVb.w, p.y - (p.y - mapVb.y) * nh / mapVb.h, nw, nh)
+        clearTimeout(wheelTimer)
+        wheelTimer = setTimeout(updateRoads, 150)
+      }, { passive: false })
+
+      // 触摸：单指平移 + 双指捏合
+      let touch = null
+      svg.addEventListener('touchstart', e => {
+        e.preventDefault()
+        clearTimeout(wheelTimer)
+        if (e.touches.length === 1) {
+          const ctm = svg.getScreenCTM().inverse()
+          touch = { type: 'pan', pt: toSvgPt(e.touches[0].clientX, e.touches[0].clientY, ctm), vb: { ...mapVb }, ctm }
+        } else if (e.touches.length >= 2) {
+          const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY)
+          const mid = toSvgPt((e.touches[0].clientX + e.touches[1].clientX) / 2, (e.touches[0].clientY + e.touches[1].clientY) / 2)
+          touch = { type: 'pinch', dist, mid, vb: { ...mapVb } }
+        }
+      }, { passive: false })
+
+      svg.addEventListener('touchmove', e => {
+        e.preventDefault()
+        if (!touch) return
+        if (touch.type === 'pan' && e.touches.length === 1) {
+          const p = toSvgPt(e.touches[0].clientX, e.touches[0].clientY, touch.ctm)
+          applyVb(touch.vb.x - (p.x - touch.pt.x), touch.vb.y - (p.y - touch.pt.y), touch.vb.w, touch.vb.h)
+        } else if (touch.type === 'pinch' && e.touches.length >= 2) {
+          const newDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY)
+          const nw = Math.min(initVb.w, touch.vb.w * touch.dist / newDist)
+          const nh = nw * SVG_H / SVG_W
+          applyVb(touch.mid.x - (touch.mid.x - touch.vb.x) * nw / touch.vb.w, touch.mid.y - (touch.mid.y - touch.vb.y) * nh / touch.vb.h, nw, nh)
+        }
+      }, { passive: false })
+
+      // touchend：检测轻触标记（未明显移动）
+      svg.addEventListener('touchend', e => {
+        e.preventDefault()
+        if (touch?.type === 'pan' && e.changedTouches.length === 1 && e.touches.length === 0) {
+          const p = toSvgPt(e.changedTouches[0].clientX, e.changedTouches[0].clientY, touch.ctm)
+          const moved = Math.hypot(p.x - touch.pt.x, p.y - touch.pt.y)
+          if (moved < 5 && !touch.fromPinch) {
+            const circle = e.target.closest('[data-idx]')
+            const cmEl = e.target.closest('.cluster-marker')
+            if (circle) {
+              const currentVb = { ...mapVb }
+              zoomToMarker(parseFloat(circle.dataset.svgx), parseFloat(circle.dataset.svgy), circle.dataset.cluster)
+              showPlacePopup(places[parseInt(circle.dataset.idx)], circle, mapEl, currentVb, SVG_W, SVG_H)
+            } else if (cmEl) {
+              const popup = document.getElementById('place-popup')
+              popup.style.display = 'none'
+              document.querySelectorAll('.pin--selected').forEach(el => el.classList.remove('pin--selected'))
+              zoomToCluster(clusterLayer._clusterData[parseInt(cmEl.dataset.ci)])
+            } else {
+              const popup = document.getElementById('place-popup')
+              if (popup.style.display !== 'none') {
+                popup.style.display = 'none'
+                document.querySelectorAll('.pin--selected').forEach(el => el.classList.remove('pin--selected'))
+                if (lastClusterVb) {
+                  animateVb(lastClusterVb.x, lastClusterVb.y, lastClusterVb.w, lastClusterVb.h)
+                  if (lastClusterVb.w >= initVb.w - 2) lastClusterVb = null
+                } else if (mapVb.w < initVb.w - 2) {
+                  zoomedClusterId = null
+                  animateVb(initVb.x, initVb.y, initVb.w, initVb.h)
+                }
+              } else if (lastClusterVb) {
+                // 按层退：有外层簇先回外层，否则回全景
+                if (prevClusterVb) {
+                  animateVb(prevClusterVb.x, prevClusterVb.y, prevClusterVb.w, prevClusterVb.h)
+                  lastClusterVb = prevClusterVb
+                  prevClusterVb = null
+                } else {
+                  animateVb(initVb.x, initVb.y, initVb.w, initVb.h)
+                  lastClusterVb = null
+                  zoomedClusterId = null
+                }
+              } else if (mapVb.w < initVb.w - 2) {
+                zoomedClusterId = null
+                animateVb(initVb.x, initVb.y, initVb.w, initVb.h)
+              }
+            }
+          }
+        }
+        if (e.touches.length === 0) { clearTimeout(wheelTimer); wheelTimer = setTimeout(updateRoads, 150) }
+        const wasPinch = touch?.type === 'pinch'
+        touch = e.touches.length === 1
+          ? (() => { const ctm = svg.getScreenCTM().inverse(); return { type: 'pan', pt: toSvgPt(e.touches[0].clientX, e.touches[0].clientY, ctm), vb: { ...mapVb }, ctm, fromPinch: wasPinch } })()
+          : null
+      }, { passive: false })
+
+      // 桌面端点击标记（非拖动时）
+      mapEl.querySelectorAll('[data-idx]').forEach(circle => {
+        circle.addEventListener('click', e => {
+          e.stopPropagation()
+          if (lastDragMoved) { lastDragMoved = false; return }
+          const currentVb = { ...mapVb }
+          zoomToMarker(parseFloat(circle.dataset.svgx), parseFloat(circle.dataset.svgy), circle.dataset.cluster)
+          showPlacePopup(places[parseInt(circle.dataset.idx)], circle, mapEl, currentVb, SVG_W, SVG_H)
+        })
+      })
+
+      // 桌面端点击 cluster 徽章（事件委托，因徽章动态生成）
+      clusterLayer.addEventListener('click', e => {
+        e.stopPropagation()
+        if (lastDragMoved) { lastDragMoved = false; return }
+        const cm = e.target.closest('.cluster-marker')
+        if (!cm) return
+        // 先关闭已开启的卡片和选中状态
+        const popup = document.getElementById('place-popup')
+        popup.style.display = 'none'
+        document.querySelectorAll('.pin--selected').forEach(el => el.classList.remove('pin--selected'))
+        zoomToCluster(clusterLayer._clusterData[parseInt(cm.dataset.ci)])
+      })
+
+      // 桌面端点击背景：关卡片 + 同步缩放返上一级；已在簇级再点返初始
+      svg.addEventListener('click', e => {
+        if (lastDragMoved) { lastDragMoved = false; return }
+        if (e.target.closest('[data-idx]') || e.target.closest('.cluster-marker')) return
+        const popup = document.getElementById('place-popup')
+        if (popup.style.display !== 'none') {
+          popup.style.display = 'none'
+          document.querySelectorAll('.pin--selected').forEach(el => el.classList.remove('pin--selected'))
+          if (lastClusterVb) {
+            animateVb(lastClusterVb.x, lastClusterVb.y, lastClusterVb.w, lastClusterVb.h)
+            if (lastClusterVb.w >= initVb.w - 2) lastClusterVb = null
+          } else if (mapVb.w < initVb.w - 2) {
+            zoomedClusterId = null
+            animateVb(initVb.x, initVb.y, initVb.w, initVb.h)
+          }
+        } else if (lastClusterVb) {
+          // 按层退：有外层簇先回外层，否则回全景
+          if (prevClusterVb) {
+            animateVb(prevClusterVb.x, prevClusterVb.y, prevClusterVb.w, prevClusterVb.h)
+            lastClusterVb = prevClusterVb
+            prevClusterVb = null
+          } else {
+            animateVb(initVb.x, initVb.y, initVb.w, initVb.h)
+            lastClusterVb = null
+            zoomedClusterId = null
+          }
+        } else if (mapVb.w < initVb.w - 2) {
+          // 缩放进去了但不在簇级：退回初始视图
+          zoomedClusterId = null
+          animateVb(initVb.x, initVb.y, initVb.w, initVb.h)
+        } else {
+          // 已在初始视图：收起 POI 列表面板
+          closePoiPanel()
+        }
+      })
+
+      // 初始渲染：先 applyVb 同步 stroke-width，使初始与缩放后状态一致
+      applyVb(initVb.x, initVb.y, initVb.w, initVb.h)
+      updateRoads()
+      // 暴露地图 API 供 POI 列表面板调用（zoomToMarker/getMapVb 均封闭在此闭包内）
+      mapApi = {
+        cityKey, places, mapEl, SVG_W, SVG_H,
+        getMapVb: () => ({ ...mapVb }),
+        zoomToMarker,
+        // 关闭当前 popup 并直接回初始视图（列表再次点击同一条目时调用，跳过簇级中间态）
+        closeMarker() {
+          const popup = document.getElementById('place-popup')
+          popup.style.display = 'none'
+          document.querySelectorAll('.pin--selected').forEach(el => el.classList.remove('pin--selected'))
+          lastClusterVb = null
+          prevClusterVb = null
+          zoomedClusterId = null
+          animateVb(initVb.x, initVb.y, initVb.w, initVb.h)
+        },
+        zoomToDay(day, factor = 3.5) {
+          const pts = places.filter(p => p.day === day && p._x != null)
+          if (!pts.length) return
+          const xs = pts.map(p => p._x), ys = pts.map(p => p._y)
+          const cx = xs.reduce((a, b) => a + b) / xs.length
+          const cy = ys.reduce((a, b) => a + b) / ys.length
+          const maxDist = Math.max(...pts.map(p => Math.hypot(p._x - cx, p._y - cy)), 8)
+          const minW = factor < 3 ? 12 : 20
+          const tw = Math.min(SVG_W / 2, Math.max(maxDist * factor, minW))
+          const th = tw * SVG_H / SVG_W
+          const tx = Math.max(0, Math.min(SVG_W - tw, cx - tw / 2))
+          const ty = Math.max(0, Math.min(SVG_H - th, cy - th / 2))
+          animateVb(tx, ty, tw, th)
+        }
+      }
+      poiActiveCat = 'all'
+      poiActiveIdx = null
+      buildCategoryFilter()
+    }
+
+    function showPlacePopup(place, pinEl, mapEl, currentVb, svgW, svgH) {
+      const popup = document.getElementById('place-popup')
+      // 百度地图搜索附加城市中文名，触发海外结果
+      const cityKey = place.city.toLowerCase().replace(/\s+/g, '')
+      const cityZh = appData?.cityLabels?.[cityKey] || place.city
+      const baiduQ = encodeURIComponent(`${place.name} ${cityZh}`)
+      const ratingColor = appData?.cityColors?.[cityKey] || appData?.theme?.primary || '#E85D4A'
+      popup.innerHTML = `
+        <div class="popup-name">${place.name}</div>
+        ${(place.description || place.rating) ? `<div class="popup-note-row">${place.description ? `<span class="popup-desc">${place.description}</span>` : ''}${place.rating ? `<span class="popup-meta">${place.description ? '&ensp;' : ''}<span style="color:${ratingColor}">★${place.rating}</span></span>` : ''}</div>` : ''}
+        ${place.shortNote ? `<div class="popup-shortnote">${place.shortNote}</div>` : ''}
+        ${appData?.region === 'domestic'
+          ? `<a class="popup-link" href="https://map.baidu.com/search/${baiduQ}?querytype=s&wd=${baiduQ}" target="_blank" rel="noopener">百度地图 →</a>`
+          : `<a class="popup-link" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name)}" target="_blank" rel="noopener">Google Maps →</a>&ensp;<a class="popup-link" href="https://map.baidu.com/search/${baiduQ}?querytype=s&wd=${baiduQ}" target="_blank" rel="noopener">百度地图 →</a>`
+        }
+      `
+      document.querySelectorAll('.pin--selected').forEach(el => el.classList.remove('pin--selected'))
+      pinEl.classList.add('pin--selected')
+      popup.classList.remove('expanding')
+
+      // SVG preserveAspectRatio=meet letterbox 还原：与 applyVb 跟踪公式保持一致
+      const cW = mapEl.clientWidth, cH = mapEl.clientHeight
+      const svgX = parseFloat(pinEl.dataset.svgx)
+      const svgY = parseFloat(pinEl.dataset.svgy)
+      const sc = Math.min(cW / svgW, cH / svgH)
+      const dispW = svgW * sc, dispH = svgH * sc
+      const screenX = (cW - dispW) / 2 + (svgX - currentVb.x) / currentVb.w * dispW
+      const screenY = (cH - dispH) / 2 + (svgY - currentVb.y) / currentVb.h * dispH
+
+      // visibility:hidden 量出实际尺寸后再显示，避免闪烁
+      popup.style.visibility = 'hidden'
+      popup.style.left = '-9999px'
+      popup.style.bottom = 'auto'
+      popup.style.width = '200px'  // 每次重置默认宽度
+      popup.style.display = 'block'
+      // 地名超两行（>42px）时放宽至 260px，保证不超两行
+      const nameEl = popup.querySelector('.popup-name')
+      if (nameEl && nameEl.offsetHeight > 42) popup.style.width = '260px'
+      const popupH = popup.offsetHeight
+      const popupW = popup.offsetWidth  // 含 padding 的 border-box 宽，供 transform-origin 对齐
+
+      // 存储 SVG 坐标供 applyVb 每帧实时跟踪卡片位置
+      popup.dataset.svgx = svgX
+      popup.dataset.svgy = svgY
+      popup.dataset.popupH = popupH
+      popup.dataset.popupW = popupW
+
+      const left = Math.max(8, Math.min(screenX - popupW / 2, cW - popupW - 8))
+      const top = Math.max(8, screenY - popupH)
+      popup.style.left = `${left}px`
+      popup.style.top = `${top}px`
+      popup.style.visibility = 'visible'
+      // 双 RAF 确保位置写入后才触发展开动画
+      requestAnimationFrame(() => requestAnimationFrame(() => popup.classList.add('expanding')))
+      // 同步 POI 列表 active 状态（地图点击 pin 和列表点击均走此路径）
+      if (mapApi) setPoiActiveItem(mapApi.places.indexOf(place))
+    }
+
+    // ── POI 列表面板 ──
+    function openPoiPanel() {
+      const panel = document.getElementById('poi-panel')
+      if (!panel) return
+      panel.hidden = false
+      // 双 RAF：先等元素取得布局，再触发 transform 过渡
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        panel.removeAttribute('data-half')
+        panel.setAttribute('data-open', '')
+        document.getElementById('poi-toggle')?.setAttribute('aria-expanded', 'true')
+      }))
+    }
+
+    function closePoiPanel() {
+      const panel = document.getElementById('poi-panel')
+      if (!panel || (!panel.hasAttribute('data-open') && !panel.hasAttribute('data-half'))) return
+      panel.removeAttribute('data-open')
+      panel.removeAttribute('data-half')
+      document.getElementById('poi-toggle')?.setAttribute('aria-expanded', 'false')
+      clearAllListHover()
+      clearRouteHighlight()
+      collapseRouteDay()
+      // 等过渡完成后隐藏（330ms 略大于 CSS 320ms）
+      setTimeout(() => { if (!panel.hasAttribute('data-open') && !panel.hasAttribute('data-half')) panel.hidden = true }, 330)
+    }
+
+    function halfOpenPoiPanel() {
+      const panel = document.getElementById('poi-panel')
+      if (!panel) return
+      panel.hidden = false
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        panel.removeAttribute('data-open')
+        panel.setAttribute('data-half', '')
+      }))
+    }
+
+    function clearAllListHover() {
+      document.querySelectorAll('.pin--list-hover').forEach(el => el.classList.remove('pin--list-hover'))
+    }
+
+    function collapseRouteDay() {
+      document.querySelectorAll('.route-day-items').forEach(el => el.remove())
+      document.querySelectorAll('.route-place-item--active').forEach(el => el.classList.remove('route-place-item--active'))
+    }
+
+    function expandRouteDay(day, dayEl) {
+      collapseRouteDay()
+      if (!mapApi) return
+      const dayPlaces = mapApi.places
+        .map((p, idx) => ({ p, idx }))
+        .filter(({ p }) => p.day === day && p._x != null)
+        .sort((a, b) => (a.p.routeOrder ?? 999) - (b.p.routeOrder ?? 999))
+      const itemsEl = document.createElement('div')
+      itemsEl.className = 'route-day-items'
+      itemsEl.innerHTML = dayPlaces.map(({ p, idx }) =>
+        `<div class="route-place-item${idx === poiActiveIdx ? ' route-place-item--active' : ''}" data-idx="${idx}"><span>${p.name}</span><span class="route-place-arrow">&#8250;</span></div>`
+      ).join('')
+      dayEl.appendChild(itemsEl)
+    }
+
+    function clearRouteHighlight() {
+      document.querySelectorAll('.pin--route-dim').forEach(el => el.classList.remove('pin--route-dim'))
+      document.querySelectorAll('.pin--route-active').forEach(el => el.classList.remove('pin--route-active'))
+      document.querySelectorAll('.pin path').forEach(el => { el.style.fill = '#1a1a1a' })
+    }
+
+    function highlightRouteDay(day, zoomFactor) {
+      if (!mapApi) return
+      clearRouteHighlight()
+      mapApi.places.forEach((p, idx) => {
+        const pinEl = document.querySelector(`.pin[data-idx="${idx}"]`)
+        if (!pinEl) return
+        if (p.day !== day) pinEl.classList.add('pin--route-dim')
+        else pinEl.classList.add('pin--route-active')
+      })
+      mapApi.zoomToDay(day, zoomFactor)
+    }
+
+    function buildRouteView() {
+      if (!mapApi) return
+      const routeEl = document.getElementById('route-view')
+      if (!routeEl) return
+      const cityColor = appData?.cityColors?.[mapApi.cityKey] || appData?.theme?.primary || '#E85D4A'
+      document.getElementById('poi-panel')?.style.setProperty('--poi-accent', cityColor)
+      const days = {}
+      mapApi.places.forEach((p, idx) => {
+        if (p.day == null) return
+        if (!days[p.day]) days[p.day] = { places: [], note: null }
+        days[p.day].places.push({ ...p, origIdx: idx })
+        if (p.dayNote && !days[p.day].note) days[p.day].note = p.dayNote
+      })
+      Object.values(days).forEach(d => {
+        d.places.sort((a, b) => (a.routeOrder ?? 999) - (b.routeOrder ?? 999))
+      })
+      const dayNums = Object.keys(days).map(Number).sort((a, b) => a - b)
+      const dayLabels = day => `D${day}`
+      if (!dayNums.length) {
+        routeEl.innerHTML = `<div class="poi-item-empty">暂无路线数据</div>`
+        return
+      }
+      routeEl.innerHTML = dayNums.map(day => {
+        const d = days[day]
+        const label = dayLabels(day)
+        const placeNames = d.places.map(p => p.name).join(' · ')
+        const count = d.places.filter(p => p._x != null).length
+        const highlight = d.places
+          .filter(p => p.rating != null)
+          .sort((a, b) => b.rating - a.rating)[0]
+        const routeIconSvg = `<svg class="route-meta-icon" width="7" height="10" viewBox="0 0 9 13"><path d="M4.5 0C2.015 0 0 2.015 0 4.5c0 3.15 4.5 8.5 4.5 8.5S9 7.65 9 4.5C9 2.015 6.985 0 4.5 0z" fill="currentColor"/><circle cx="4.5" cy="4.5" r="1.8" fill="var(--cream)"/></svg>`
+        const metaParts = [
+          `<span style="display:inline-flex;align-items:center;gap:3px;">${routeIconSvg}<span>${count}</span></span>`,
+          highlight ? `<span style="display:inline-flex;align-items:flex-start;gap:3px;"><span>◆</span><span>${highlight.name}</span></span>` : null
+        ].filter(Boolean)
+        return `<div class="route-day" data-day="${day}">
+          <div class="route-day-label" style="color:var(--ink); display:flex; justify-content:space-between; align-items:center;">
+            <span>${label}</span>
+            <span class="route-day-chevron">&#8249;</span>
+          </div>
+          ${metaParts.length ? `<div class="route-day-meta" style="color:${cityColor}">${metaParts.join('<span class="route-meta-sep"> · </span>')}</div>` : ''}
+          ${d.note
+            ? `<div class="route-day-note">${d.note}</div>`
+            : d.places.length > 1 ? `<div class="route-day-places">${placeNames}</div>` : ''}
+        </div>`
+      }).join('')
+    }
+
+    function switchPoiMode(mode) {
+      poiPanelMode = mode
+      const filterEl = document.getElementById('poi-filter')
+      const listEl = document.getElementById('poi-list')
+      const routeEl = document.getElementById('route-view')
+      document.querySelectorAll('.poi-mode-text').forEach(t => t.classList.toggle('active', t.dataset.mode === mode))
+      if (mode === 'explore') {
+        clearRouteHighlight()
+        collapseRouteDay()
+        const panel = document.getElementById('poi-panel')
+        if (panel?.hasAttribute('data-half')) {
+          panel.removeAttribute('data-half')
+          panel.setAttribute('data-open', '')
+        }
+        if (filterEl) filterEl.hidden = false
+        if (listEl) listEl.hidden = false
+        if (routeEl) routeEl.hidden = true
+      } else {
+        clearAllListHover()
+        if (filterEl) filterEl.hidden = true
+        if (listEl) listEl.hidden = true
+        if (routeEl) { routeEl.hidden = false; buildRouteView() }
+        const panel = document.getElementById('poi-panel')
+        if (panel?.hasAttribute('data-half')) {
+          panel.removeAttribute('data-half')
+          panel.setAttribute('data-open', '')
+        }
+      }
+    }
+
+    function updateRouteModeAvailability() {
+      if (!mapApi) return
+      const hasRoute = mapApi.places.some(p => p.day != null)
+      const routeBtn = document.getElementById('route-mode-text')
+      if (routeBtn) routeBtn.hidden = !hasRoute
+      if (!hasRoute && poiPanelMode === 'route') switchPoiMode('explore')
+    }
+
+    function setPoiActiveItem(idx) {
+      document.querySelectorAll('.poi-item--active').forEach(el => el.classList.remove('poi-item--active'))
+      poiActiveIdx = (idx === -1 || idx == null) ? null : idx
+      if (poiActiveIdx !== null) {
+        const item = document.querySelector(`.poi-item[data-idx="${idx}"]`)
+        if (item) {
+          item.classList.add('poi-item--active')
+          // 只在面板已展开时滚动定位，避免面板关闭时 scrollIntoView 引发页面横向跳动
+          if (document.getElementById('poi-panel')?.hasAttribute('data-open')) {
+            item.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+          }
+        }
+      }
+    }
+
+    function buildCategoryFilter() {
+      const filterEl = document.getElementById('poi-filter')
+      if (!filterEl || !mapApi) return
+      const cats = [...new Set(mapApi.places.map(p => p.category).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'zh-CN'))
+      filterEl.innerHTML =
+        `<button class="poi-chip active" data-cat="all"><span>全部</span></button>` +
+        cats.map(c => `<button class="poi-chip" data-cat="${c}"><span>${c}</span></button>`).join('')
+    }
+
+    function buildPoiList(category) {
+      poiActiveCat = category
+      if (!mapApi) return
+      const ul = document.getElementById('poi-list')
+      if (!ul) return
+      const cityColor = appData?.cityColors?.[mapApi.cityKey] || appData?.theme?.primary || '#E85D4A'
+      document.getElementById('poi-panel')?.style.setProperty('--poi-accent', cityColor)
+      document.querySelectorAll('.poi-chip').forEach(c => c.classList.toggle('active', c.dataset.cat === category))
+      const filtered = mapApi.places
+        .map((p, origIdx) => ({ p, origIdx }))
+        .filter(({ p }) => category === 'all' || p.category === category)
+        .sort((a, b) => a.p.name.localeCompare(b.p.name, 'zh-CN'))
+      ul.innerHTML = filtered.length
+        ? filtered.map(({ p, origIdx }) =>
+          `<li class="poi-item${origIdx === poiActiveIdx ? ' poi-item--active' : ''}" data-idx="${origIdx}">
+            <div class="poi-item-name">${p.name}</div>
+            ${p.shortNote ? `<div class="poi-item-note">${p.shortNote}</div>` : ''}
+            ${p.rating ? `<div class="poi-item-rating" style="color:${cityColor}">★ ${p.rating}</div>` : ''}
+          </li>`).join('')
+        : `<li class="poi-item-empty">暂无地点</li>`
+    }
+
+    function refreshPoiList() { buildPoiList(poiActiveCat); updateRouteModeAvailability() }
+
+    function initPoiPanel() {
+      // 触发器：打开 / 关闭切换
+      document.getElementById('poi-toggle')?.addEventListener('click', () => {
+        const panel = document.getElementById('poi-panel')
+        if (panel?.hasAttribute('data-open')) closePoiPanel()
+        else { if (!mapApi) return; refreshPoiList(); openPoiPanel() }
+      })
+      document.getElementById('poi-panel-close')?.addEventListener('click', closePoiPanel)
+
+      // 探索 / 路线模式切换
+      document.querySelectorAll('.poi-mode-text').forEach(btn =>
+        btn.addEventListener('click', () => switchPoiMode(btn.dataset.mode))
+      )
+
+      // category chip 切换（事件委托，支持动态生成的按钮）
+      document.getElementById('poi-filter')?.addEventListener('click', e => {
+        const chip = e.target.closest('.poi-chip')
+        if (!chip) return
+        clearAllListHover()
+        buildPoiList(chip.dataset.cat)
+      })
+
+      const ul = document.getElementById('poi-list')
+      if (!ul) return
+
+      // 桌面端：hover 条目时高亮对应 pin
+      if (!isPoiTouch) {
+        ul.addEventListener('mouseover', e => {
+          const item = e.target.closest('.poi-item')
+          if (item) document.querySelector(`.pin[data-idx="${item.dataset.idx}"]`)?.classList.add('pin--list-hover')
+        })
+        ul.addEventListener('mouseout', e => {
+          const item = e.target.closest('.poi-item')
+          if (item) document.querySelector(`.pin[data-idx="${item.dataset.idx}"]`)?.classList.remove('pin--list-hover')
+        })
+      }
+
+      // 路线视图：hover/tap 某天高亮对应 pin
+      const routeEl = document.getElementById('route-view')
+      if (routeEl) {
+        if (!isPoiTouch) {
+          routeEl.addEventListener('mouseover', e => {
+            if (poiActiveIdx !== null) return
+            const day = e.target.closest('.route-day')
+            if (day) highlightRouteDay(Number(day.dataset.day))
+          })
+          routeEl.addEventListener('mouseout', e => {
+            if (poiActiveIdx !== null) return
+            const day = e.target.closest('.route-day')
+            if (day) clearRouteHighlight()
+          })
+          routeEl.addEventListener('click', e => {
+            const placeItem = e.target.closest('.route-place-item')
+            if (placeItem) {
+              const origIdx = parseInt(placeItem.dataset.idx)
+              if (poiActiveIdx === origIdx) {
+                document.getElementById('place-popup').style.display = 'none'
+                document.querySelectorAll('.pin--selected').forEach(el => el.classList.remove('pin--selected'))
+                return
+              }
+              document.querySelectorAll('.route-place-item--active').forEach(el => el.classList.remove('route-place-item--active'))
+              placeItem.classList.add('route-place-item--active')
+              const place = mapApi.places[origIdx]
+              const pinEl = mapApi.mapEl.querySelector(`.pin[data-idx="${origIdx}"]`)
+              if (!pinEl) return
+              mapApi.zoomToMarker(place._x, place._y, place.clusterId || '')
+              showPlacePopup(place, pinEl, mapApi.mapEl, mapApi.getMapVb(), mapApi.SVG_W, mapApi.SVG_H)
+              return
+            }
+            const day = e.target.closest('.route-day')
+            if (!day) return
+            const dayNum = Number(day.dataset.day)
+            const isExpanded = day.querySelector('.route-day-items')
+            document.querySelectorAll('.route-day--active').forEach(el => el.classList.remove('route-day--active'))
+            if (isExpanded) {
+              collapseRouteDay()
+              clearRouteHighlight()
+              document.getElementById('place-popup').style.display = 'none'
+              document.querySelectorAll('.pin--selected').forEach(el => el.classList.remove('pin--selected'))
+            } else {
+              document.getElementById('place-popup').style.display = 'none'
+              document.querySelectorAll('.pin--selected').forEach(el => el.classList.remove('pin--selected'))
+              day.classList.add('route-day--active')
+              highlightRouteDay(dayNum)
+              expandRouteDay(dayNum, day)
+            }
+          })
+        } else {
+          routeEl.addEventListener('click', e => {
+            const placeItem = e.target.closest('.route-place-item')
+            if (placeItem) {
+              const origIdx = parseInt(placeItem.dataset.idx)
+              if (poiActiveIdx === origIdx) {
+                document.getElementById('place-popup').style.display = 'none'
+                document.querySelectorAll('.pin--selected').forEach(el => el.classList.remove('pin--selected'))
+                return
+              }
+              document.querySelectorAll('.route-place-item--active').forEach(el => el.classList.remove('route-place-item--active'))
+              placeItem.classList.add('route-place-item--active')
+              const place = mapApi.places[origIdx]
+              const pinEl = mapApi.mapEl.querySelector(`.pin[data-idx="${origIdx}"]`)
+              if (!pinEl) return
+              mapApi.zoomToMarker(place._x, place._y, place.clusterId || '')
+              showPlacePopup(place, pinEl, mapApi.mapEl, mapApi.getMapVb(), mapApi.SVG_W, mapApi.SVG_H)
+              return
+            }
+            const day = e.target.closest('.route-day')
+            if (!day) return
+            const dayNum = Number(day.dataset.day)
+            const panel = document.getElementById('poi-panel')
+            const alreadyActive = day.classList.contains('route-day--active')
+            document.querySelectorAll('.route-day--active').forEach(el => el.classList.remove('route-day--active'))
+            if (alreadyActive) {
+              collapseRouteDay()
+              clearRouteHighlight()
+              document.getElementById('place-popup').style.display = 'none'
+              document.querySelectorAll('.pin--selected').forEach(el => el.classList.remove('pin--selected'))
+              panel?.removeAttribute('data-half')
+              panel?.setAttribute('data-open', '')
+            } else {
+              day.classList.add('route-day--active')
+              document.getElementById('place-popup').style.display = 'none'
+              document.querySelectorAll('.pin--selected').forEach(el => el.classList.remove('pin--selected'))
+              highlightRouteDay(dayNum, 2.0)
+              expandRouteDay(dayNum, day)
+              halfOpenPoiPanel()
+            }
+          })
+        }
+      }
+
+      // 点击条目：zoom + 打开卡片；再次点击同一条目则关闭并缩回
+      ul.addEventListener('click', e => {
+        const item = e.target.closest('.poi-item')
+        if (!item || !mapApi) return
+        const idx = parseInt(item.dataset.idx)
+        // 再次点击已选中条目：关卡片并缩回原视图
+        if (idx === poiActiveIdx) {
+          mapApi.closeMarker()
+          setPoiActiveItem(null)
+          return
+        }
+        const place = mapApi.places[idx]
+        if (!place) return
+        const pinEl = mapApi.mapEl.querySelector(`.pin[data-idx="${idx}"]`)
+        if (!pinEl) return
+        // 移动端先关面板再 zoom，避免全屏遮住地图
+        if (isPoiTouch) closePoiPanel()
+        const currentVb = mapApi.getMapVb()
+        mapApi.zoomToMarker(place._x, place._y, place.clusterId || '')
+        showPlacePopup(place, pinEl, mapApi.mapEl, currentVb, mapApi.SVG_W, mapApi.SVG_H)
+      })
+
+      // 弹窗关闭时清除列表 active 状态（零侵入：MutationObserver 监听 style 属性）
+      const popup = document.getElementById('place-popup')
+      if (popup) {
+        new MutationObserver(() => {
+          if (popup.style.display === 'none') {
+            setPoiActiveItem(null)
+            document.querySelectorAll('.route-place-item--active').forEach(el => el.classList.remove('route-place-item--active'))
+          }
+        }).observe(popup, { attributes: true, attributeFilter: ['style'] })
+      }
+    }
+
+    async function switchSvgCity(cityKey) {
+      closePoiPanel()
+      poiPanelMode = 'explore'
+      document.querySelectorAll('.poi-mode-text').forEach(t => t.classList.toggle('active', t.dataset.mode === 'explore'))
+      const routeEl = document.getElementById('route-view')
+      if (routeEl) { routeEl.hidden = true; routeEl.innerHTML = '' }
+      document.getElementById('poi-filter')?.removeAttribute('hidden')
+      document.getElementById('poi-list')?.removeAttribute('hidden')
+      document.getElementById('place-popup').style.display = 'none'
+      document.querySelectorAll('.pin--selected').forEach(el => el.classList.remove('pin--selected'))
+      await renderCityMapSVG(cityKey)
+    }
+
+    function initSvgMap(data, initialCityKey) {
+      if (!data) return
+      const cities = Object.keys(data.cityNotes)
+      const firstKey = initialCityKey || cities[0]
+      switchSvgCity(firstKey)
+      svgReady = true
+    }
+
+    // 初始化应用
+    const tripId = getTripId()
+
+    document.getElementById('back-btn').addEventListener('click', () => showScreen('home'))
+    initPoiPanel()
+
+    if (!tripId) {
+      document.getElementById('trip-title').textContent = '请指定 trip ID（?trip=australia-2026）'
+    } else {
+      fetch(`data/${tripId}.json`)
+        .then(r => r.json())
+        .then(data => {
+          appData = data
+          document.title = data.title || tripId
+          document.documentElement.style.setProperty('--primary', data.theme?.primary || '#E85D4A')
+          document.getElementById('trip-title').textContent = data.title || tripId
+          renderHomeScreen(data)
+          // 首屏初始化 back-to-top 监听
+          _backToTopListener = () => {
+            _backToTopBtn.classList.toggle('visible', window.scrollY > window.innerHeight * 0.7)
+          }
+          window.addEventListener('scroll', _backToTopListener, { passive: true })
+        })
+        .catch(() => {
+          document.getElementById('trip-title').textContent = `无法加载 ${tripId} 数据`
+        })
+    }
+  </script>
+  <button class="back-to-top" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+</body>
+</html>

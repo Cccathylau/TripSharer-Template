@@ -1,0 +1,15 @@
+{
+  "type": "module",
+  "scripts": {
+    "fetch": "node scripts/fetch-notion.js",
+    "build": "node scripts/build.js",
+    "upload": "node scripts/upload-cos.js",
+    "deploy": "node scripts/build.js australia-2026 && node scripts/upload-cos.js australia-2026"
+  },
+  "dependencies": {
+    "@turf/turf": "^7.3.5",
+    "cos-nodejs-sdk-v5": "^2.14.7",
+    "dotenv": "^16.0.0",
+    "sharp": "^0.34.5"
+  }
+}
