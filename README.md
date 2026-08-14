@@ -109,7 +109,7 @@ Agent 会读取本文档完成其余所有配置和部署。
 
 ### Notion 数据库结构
 
-### Places Database
+**Places Database**
 
 | 字段名 | 类型 | 说明 |
 |--------|------|------|
@@ -125,7 +125,7 @@ Agent 会读取本文档完成其余所有配置和部署。
 | Day | Number | 所属天数（1/2/3…），用于路线视图分组 |
 | Route Order | Number | 当天内顺序 |
 
-### Overview Page 和城市 Notes Page
+**Overview Page 和城市 Notes Page**
 
 - **Overview Page**：出发前信息（SIM 卡、货币、打包清单等），支持段落、H1 标题、有序 / 无序列表
 - **城市 Notes Page**：每个城市一个页面，交通 / 贴士 / 购物等内容，页面标题作为城市显示名
@@ -133,14 +133,14 @@ Agent 会读取本文档完成其余所有配置和部署。
 
 ### 部署
 
-### GitHub Pages（默认）
+**GitHub Pages（默认）**
 
 1. 仓库 Settings → Pages → Source 选 **GitHub Actions**
 2. Settings → Secrets → Actions 添加 `NOTION_TOKEN`（以及 `GOOGLE_MAPS_KEY` 或 `GAODE_KEY`）
 3. 修改 `.github/workflows/deploy-gh-pages.yml` 中的 `my-trip-2026` 为你的行程 ID
 4. Push → 自动构建部署，URL 格式为 `https://[username].github.io/[repo-name]`
 
-### 腾讯云 COS（适合国内访问）
+**腾讯云 COS（适合国内访问）**
 
 COS 香港节点国内直连，无需 ICP 备案。配置步骤见 [`docs/cos-setup.md`](docs/cos-setup.md)，完成后运行：
 
