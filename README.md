@@ -6,16 +6,8 @@
 
 [查看示例 →](https://au2026.cathylau.com/index.html)
 
-<table border="0" cellspacing="4" cellpadding="0">
-  <tr>
-    <td><img src="assets/preview-7.jpg" width="100%"></td>
-    <td><img src="assets/preview-4.jpg" width="100%"></td>
-  </tr>
-  <tr>
-    <td><img src="assets/preview-1.jpg" width="100%"></td>
-    <td><img src="assets/preview-6.jpg" width="100%"></td>
-  </tr>
-</table>
+<img src="assets/preview-7.jpg" width="49%"><img src="assets/preview-4.jpg" width="49%"><br>
+<img src="assets/preview-1.jpg" width="49%"><img src="assets/preview-6.jpg" width="49%">
 
 ## 功能
 
