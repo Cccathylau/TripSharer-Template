@@ -41,7 +41,7 @@ Once done, note the IDs of these pages (open the page → copy link → the 32-c
 
 **Geocoding** (converts addresses to coordinates)
 - International cities → [Google Maps API Key](https://console.cloud.google.com/) (recommended)
-- Mainland China cities → [Amap API Key](https://lbs.amap.com/) (required)
+- Mainland China cities → [Gaode API Key](https://lbs.amap.com/) (required)
 
 **Deployment**
 - GitHub Pages → free, zero extra setup, works globally
@@ -85,7 +85,7 @@ Push to main — GitHub Actions rebuilds and redeploys.
 |----------|---------|----------|
 | `NOTION_TOKEN` | Notion Integration Token | Yes |
 | `GOOGLE_MAPS_KEY` | Google geocoding, better accuracy for international cities | Recommended |
-| `GAODE_KEY` | Amap API Key for mainland China cities | Required for China cities |
+| `GAODE_KEY` | Gaode API Key for mainland China cities | Required for China cities |
 | `TENCENT_SECRET_ID` | Tencent Cloud COS credentials | COS deployment only |
 | `TENCENT_SECRET_KEY` | Tencent Cloud COS credentials | COS deployment only |
 
@@ -110,7 +110,7 @@ Push to main — GitHub Actions rebuilds and redeploys.
   cityZhNames: {           // Chinese city names for Baidu Maps navigation links
     city1: "City Name",
   },
-  region: "international", // "international" or "domestic" (mainland China, uses Amap)
+  region: "international", // "international" or "domestic" (mainland China, uses Gaode)
   theme: { primary: "#E85D4A" },
   siteUrl: "https://your-username.github.io/TripSharer-Template",
 }
