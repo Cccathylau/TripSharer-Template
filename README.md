@@ -18,7 +18,7 @@
 | 平台 | 状态 | 说明 |
 |------|------|------|
 | Claude Code | 支持 | Skill 开发中 |
-| 其余能执行 shell 命令且可访问外部网络的本地 Agent | 支持 | 按本文档操作即可 |
+| 本地 Agent（可执行 shell + 访问外网） | 支持 | 按本文档操作即可 |
 | 普通 Chatbot | 不推荐 | 无法运行 npm 命令，难以完成部署 |
 
 ## 使用步骤
@@ -37,17 +37,17 @@
 
 **3. 准备 API Key 并选择部署路径**
 
-地理编码（地址自动转坐标）：
+**地理编码**（地址自动转坐标）
 - 国际城市 → [Google Maps API Key](https://console.cloud.google.com/)（推荐）
 - 中国大陆城市 → [高德 API Key](https://lbs.amap.com/)（必填）
 
-部署路径：
+**部署路径**
 - 需要国内稳定访问 → 腾讯云 COS（见下方「部署」一节，需提前完成配置）
 - 海外或技术用户 → GitHub Pages（免费，零额外配置）
 
----
+## 交给 Agent
 
-准备好以上信息后，Fork 仓库并告诉你的 Agent：
+Fork 仓库后，把以下内容发给你的 Agent：
 
 > 「帮我按 README 配置并部署 TripSharer，我的 Notion Token 是 xxx，页面 ID 是 xxx」
 
@@ -63,6 +63,11 @@ Agent 会读取本文档完成其余所有配置和部署。
 5. 按下方「部署」一节完成发布
 
 </details>
+
+## 内容更新
+
+- **改了代码**：push main → GitHub Actions 自动 fetch + build + 部署
+- **只改了 Notion 内容**：仓库 Actions 页面 → Fetch Notion Data → Run workflow
 
 ---
 
@@ -148,17 +153,16 @@ COS 香港节点国内直连，无需 ICP 备案。配置步骤见 [`docs/cos-se
 npm run deploy my-trip-2026
 ```
 
-### 内容更新
-
-- **改了代码**：push main → GitHub Actions 自动 fetch + build + 部署
-- **只改了 Notion 内容**：仓库 Actions 页面 → Fetch Notion Data → Run workflow
-
 ### 常见问题
 
-**地理编码失败**：检查 Notion 地址字段是否填写；中国大陆城市需设置 `GAODE_KEY`
+**地理编码失败**
+检查 Notion 地址字段是否填写；中国大陆城市需设置 `GAODE_KEY`
 
-**fetch 很慢**：首次抓取城市路网和水域数据需要 5–10 分钟；重跑会继续使用已缓存的部分
+**fetch 很慢**
+首次抓取城市路网和水域数据需要 5–10 分钟；重跑会继续使用已缓存的部分
 
-**GitHub Actions 失败**：确认 Secrets 已添加，并确认 Pages Source 已设为 GitHub Actions
+**GitHub Actions 失败**
+确认 Secrets 已添加，并确认 Pages Source 已设为 GitHub Actions
 
-**COS 跨域报错**：COS bucket 需配置 CORS，参考 `docs/cos-setup.md`
+**COS 跨域报错**
+COS bucket 需配置 CORS，参考 `docs/cos-setup.md`
