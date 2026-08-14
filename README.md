@@ -67,7 +67,7 @@ Agent 会读取本文档完成其余所有配置和部署。
 ## 内容更新
 
 **更新了 Notion 内容**（新增地点、改了心得）
-告诉 Agent「请重新拉取 Notion 数据并部署」；或在 GitHub 仓库 → Actions → Fetch Notion Data → Run workflow 手动触发
+本地运行 `npm run fetch my-trip`，数据正确后 `git add data/ && git commit && git push`，CI 自动构建部署；或在 GitHub 仓库 → Actions → Fetch Notion Data → Run workflow 手动触发（会自动 commit 数据）
 
 **更新了代码**
 Push 到 main，GitHub Actions 自动重新构建并部署

@@ -1,0 +1,39 @@
+name: Fetch Notion Data
+
+on:
+  workflow_dispatch:
+    inputs:
+      trip_id:
+        description: trips.config.js 中的行程 ID
+        required: true
+        default: my-trip
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Fetch Notion data
+        run: node scripts/fetch-notion.js ${{ github.event.inputs.trip_id }}
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          GOOGLE_MAPS_KEY: ${{ secrets.GOOGLE_MAPS_KEY }}
+          GAODE_KEY: ${{ secrets.GAODE_KEY }}
+
+      - name: Commit data files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/
+          git diff --cached --quiet || git commit -m "chore: update notion data (${{ github.event.inputs.trip_id }})"
+          git push
