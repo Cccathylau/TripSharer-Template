@@ -43,7 +43,7 @@
 
 **部署路径**
 - 需要国内稳定访问 → 腾讯云 COS（见下方「部署」一节，需提前完成配置）
-- 海外或技术用户 → GitHub Pages（免费，零额外配置）
+- 海外或技术用户 → GitHub Pages（零额外配置）
 
 ## 交给 Agent
 
@@ -54,20 +54,23 @@ Fork 仓库后，把以下内容发给你的 Agent：
 Agent 会读取本文档完成其余所有配置和部署。
 
 <details>
-<summary>没有 Agent？手动配置步骤</summary>
+<summary>手动配置步骤</summary>
 
 1. Fork 并 clone 仓库，`npm install && cp .env.example .env`，填入 Token 和 API Key
 2. 编辑 `trips.config.js`，填入 Notion 各页面 ID 和城市信息
-3. `npm run fetch my-trip-2026`（首次约 5–10 分钟）
-4. `npm run build my-trip-2026`
+3. `npm run fetch my-trip`（首次约 5–10 分钟）
+4. `npm run build my-trip`
 5. 按下方「部署」一节完成发布
 
 </details>
 
 ## 内容更新
 
-- **改了代码**：push main → GitHub Actions 自动 fetch + build + 部署
-- **只改了 Notion 内容**：仓库 Actions 页面 → Fetch Notion Data → Run workflow
+**更新了 Notion 内容**（新增地点、改了心得）
+告诉 Agent「请重新拉取 Notion 数据并部署」；或在 GitHub 仓库 → Actions → Fetch Notion Data → Run workflow 手动触发
+
+**更新了代码**
+Push 到 main，GitHub Actions 自动重新构建并部署
 
 ---
 
@@ -86,7 +89,7 @@ Agent 会读取本文档完成其余所有配置和部署。
 ### trips.config.js 配置
 
 ```js
-"my-trip-2026": {
+"my-trip": {
   databaseId: "",          // Notion Places 数据库 ID
   overviewPageId: "",      // 行程总览 Page ID
   cityPageIds: {           // 城市 key → 城市 Notes Page ID
@@ -142,7 +145,7 @@ Agent 会读取本文档完成其余所有配置和部署。
 
 1. 仓库 Settings → Pages → Source 选 **GitHub Actions**
 2. Settings → Secrets → Actions 添加 `NOTION_TOKEN`（以及 `GOOGLE_MAPS_KEY` 或 `GAODE_KEY`）
-3. 修改 `.github/workflows/deploy-gh-pages.yml` 中的 `my-trip-2026` 为你的行程 ID
+3. 修改 `.github/workflows/deploy-gh-pages.yml` 中的 `my-trip` 为你的行程 ID
 4. Push → 自动构建部署，URL 格式为 `https://[username].github.io/[repo-name]`
 
 **腾讯云 COS（适合国内访问）**
@@ -150,7 +153,7 @@ Agent 会读取本文档完成其余所有配置和部署。
 COS 香港节点国内直连，无需 ICP 备案。配置步骤见 [`docs/cos-setup.md`](docs/cos-setup.md)，完成后运行：
 
 ```bash
-npm run deploy my-trip-2026
+npm run deploy my-trip
 ```
 
 ### 常见问题

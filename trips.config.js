@@ -1,5 +1,5 @@
 export const TRIPS = {
-  "my-trip-2026": {
+  "my-trip": {
     databaseId: "YOUR_PLACES_DATABASE_ID",
     overviewPageId: "YOUR_OVERVIEW_PAGE_ID",
     cityPageIds: {
@@ -30,7 +30,7 @@ export const TRIPS = {
     theme: { primary: "#E85D4A" },
     siteUrl: "https://your-username.github.io/TripSharer-Template",
     coverMeta: {
-      title: "My Trip 2026",
+      title: "My Trip",
       description: "City1 · City2",
       boundaryCity: "city1",
       boundarySlice: [0, 100],

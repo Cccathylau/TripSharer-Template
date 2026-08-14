@@ -28,14 +28,14 @@ jobs:
       - run: npm ci
 
       - name: Fetch Notion data
-        run: node scripts/fetch-notion.js my-trip-2026
+        run: node scripts/fetch-notion.js my-trip
         env:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           GOOGLE_MAPS_KEY: ${{ secrets.GOOGLE_MAPS_KEY }}
           GAODE_KEY: ${{ secrets.GAODE_KEY }}
 
       - name: Build
-        run: node scripts/build.js my-trip-2026
+        run: node scripts/build.js my-trip
 
       - uses: actions/configure-pages@v4
 
