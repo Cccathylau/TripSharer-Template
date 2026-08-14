@@ -6,8 +6,7 @@
 
 [查看示例 →](https://au2026.cathylau.com/index.html)
 
-<img src="assets/preview-7.jpg" width="49%"><img src="assets/preview-4.jpg" width="49%"><br>
-<img src="assets/preview-1.jpg" width="49%"><img src="assets/preview-6.jpg" width="49%">
+![preview](assets/preview.jpg)
 
 ## 功能
 
