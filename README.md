@@ -9,7 +9,7 @@
 ## 功能
 
 - **风格化城市地图**：有设计感的手绘风格地图，清晰展示你去过的每个地方
-- **一条链接发出去**：手机即开，无需登录，国内直连
+- **一条链接发出去**：浏览器打开，无需登录，国内直连
 - **城市攻略**：具体攻略心得直接来自你的 Notion 页面
 - **地点与路线**：点开查看评分、备注详情
 
@@ -18,7 +18,7 @@
 | 平台 | 状态 | 说明 |
 |------|------|------|
 | Claude Code | 支持 | Skill 开发中 |
-| 本地 Agent（可执行 shell + 访问外网） | 支持 | 按本文档操作即可 |
+| 本地 Agent（可执行 shell + 访问外部网络） | 支持 | 按本文档操作即可 |
 | 普通 Chatbot | 不推荐 | 无法运行 npm 命令，难以完成部署 |
 
 ## 使用步骤
@@ -31,7 +31,7 @@
 
 **2. 复制 Notion 模板，按指引填写内容，并在每个页面右上角 Connections 中添加你的 Integration**
 
-[→ 打开 Notion 模板](https://www.notion.so/cccathylau/TripSharer-Template-17a0c7ad070a82de8cbb01e252863fee)
+[打开 Notion 模板](https://www.notion.so/cccathylau/TripSharer-Template-17a0c7ad070a82de8cbb01e252863fee)
 
 填写完成后，记下以下页面的 ID（打开页面 → 复制链接 → 末尾 32 位字符串）：Places 数据库、总览页、各城市 Notes 页。
 
