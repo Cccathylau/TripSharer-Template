@@ -6,6 +6,17 @@
 
 [查看示例 →](https://au2026.cathylau.com/index.html)
 
+<table>
+  <tr>
+    <td width="50%"><img src="assets/preview-7.jpg" width="100%"></td>
+    <td width="50%"><img src="assets/preview-4.jpg" width="100%"></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="assets/preview-1.jpg" width="100%"></td>
+    <td width="50%"><img src="assets/preview-6.jpg" width="100%"></td>
+  </tr>
+</table>
+
 ## 功能
 
 - **风格化城市地图**：有设计感的手绘风格地图，清晰展示你去过的每个地方
