@@ -2,7 +2,7 @@
 
 🌏 [English](README.en.md)
 
-旅游回来，总被问攻略？在Notion简单录入地点信息和心得分享，一键生成精美攻略地图网站，即刻分享给需要的朋友家人。
+旅游回来，总被问攻略？在Notion简单录入地点信息和心得分享，一键生成精美攻略地图网站，即刻分享。
 
 [查看示例 →](https://au2026.cathylau.com/index.html)
 
@@ -17,7 +17,7 @@
 
 | 平台 | 状态 | 说明 |
 |------|------|------|
-| Claude Code | 支持 | `/tripsharer-setup` 引导 Skill 开发中 |
+| Claude Code | 支持 | Skill 开发中 |
 | 其余能执行 shell 命令且可访问外部网络的本地 Agent | 支持 | 按本文档操作即可 |
 | 普通 Chatbot | 不推荐 | 无法运行 npm 命令，难以完成部署 |
 
@@ -66,11 +66,9 @@ Agent 会读取本文档完成其余所有配置和部署。
 
 ---
 
-*以下为技术配置参考，适合手动配置或供 AI Agent 读取。*
+## 技术配置参考
 
----
-
-## 环境变量
+### 环境变量
 
 | 变量名 | 用途 | 必填 |
 |--------|------|------|
@@ -80,7 +78,7 @@ Agent 会读取本文档完成其余所有配置和部署。
 | `TENCENT_SECRET_ID` | 腾讯云 COS 上传凭证 | 仅 COS 部署需要 |
 | `TENCENT_SECRET_KEY` | 腾讯云 COS 上传凭证 | 仅 COS 部署需要 |
 
-## trips.config.js 配置
+### trips.config.js 配置
 
 ```js
 "my-trip-2026": {
@@ -109,7 +107,7 @@ Agent 会读取本文档完成其余所有配置和部署。
 
 **Notion ID 获取方式**：打开页面或数据库，URL 格式为 `notion.so/[workspace]/[32位ID]?v=...`，取 `?v=` 前的 32 位字符串（去掉连字符）。
 
-## Notion 数据库结构
+### Notion 数据库结构
 
 ### Places Database
 
@@ -133,7 +131,7 @@ Agent 会读取本文档完成其余所有配置和部署。
 - **城市 Notes Page**：每个城市一个页面，交通 / 贴士 / 购物等内容，页面标题作为城市显示名
 - **城市主题色**：在页面任意位置加一个含 🎨 emoji 的 Callout，填 hex 色值（`#E85D4A`）或颜色名（`coral`），fetch 时自动读取
 
-## 部署
+### 部署
 
 ### GitHub Pages（默认）
 
@@ -150,12 +148,12 @@ COS 香港节点国内直连，无需 ICP 备案。配置步骤见 [`docs/cos-se
 npm run deploy my-trip-2026
 ```
 
-## 内容更新
+### 内容更新
 
 - **改了代码**：push main → GitHub Actions 自动 fetch + build + 部署
 - **只改了 Notion 内容**：仓库 Actions 页面 → Fetch Notion Data → Run workflow
 
-## 常见问题
+### 常见问题
 
 **地理编码失败**：检查 Notion 地址字段是否填写；中国大陆城市需设置 `GAODE_KEY`
 
