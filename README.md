@@ -59,8 +59,9 @@ Agent 会读取本文档完成其余所有配置和部署。
 1. Fork 并 clone 仓库，`npm install && cp .env.example .env`，填入 Token 和 API Key
 2. 编辑 `trips.config.js`，填入 Notion 各页面 ID 和城市信息
 3. `npm run fetch my-trip`（首次约 5–10 分钟）
-4. `npm run build my-trip`
-5. 按下方「部署」一节完成发布
+4. `git add data/ && git commit -m "chore: add notion data"`
+5. `npm run build my-trip`（本地验证）
+6. 按下方「部署」一节完成发布
 
 </details>
 
