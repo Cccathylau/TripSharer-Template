@@ -51,7 +51,14 @@ Once done, note the IDs of these pages (open the page → copy link → the 32-c
 
 Fork this repo, then tell your Agent:
 
-> "Help me configure and deploy TripSharer following the README. My Notion Token is xxx and my page IDs are xxx."
+> "Help me configure and deploy TripSharer following the README:
+> - Notion Token: xxx
+> - Google Maps API Key: xxx (international cities) / Gaode Key: xxx (mainland China)
+> - Places database ID: xxx
+> - Overview page ID: xxx
+> - [City name] Notes page ID: xxx
+> - City: [City name, Country] (for map boundary, e.g. Sydney, Australia)
+> - Deployment: GitHub Pages / Tencent Cloud COS"
 
 Your Agent will read this document and handle the rest.
 
@@ -146,8 +153,13 @@ Push to main — GitHub Actions rebuilds and redeploys.
 
 **GitHub Pages (default)**
 
-1. Repo Settings → Pages → Source: select **GitHub Actions**
-2. Settings → Secrets → Actions: add `NOTION_TOKEN` (and `GOOGLE_MAPS_KEY` or `GAODE_KEY`)
+1. Set GitHub Secrets (Agent can use gh CLI; or add manually in Settings → Secrets → Actions):
+   ```bash
+   gh secret set NOTION_TOKEN --body "your_token"
+   gh secret set GOOGLE_MAPS_KEY --body "your_key"   # international cities
+   # gh secret set GAODE_KEY --body "your_key"       # mainland China cities
+   ```
+2. Repo Settings → Pages → Source: select **GitHub Actions** (one-time manual step in GitHub web UI)
 3. Edit `.github/workflows/deploy-gh-pages.yml` — replace `my-trip` with your trip ID
 4. Push → auto-build and deploy. URL format: `https://[username].github.io/[repo-name]`
 

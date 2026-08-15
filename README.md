@@ -52,7 +52,14 @@
 
 Fork 仓库后，把以下内容发给你的 Agent：
 
-> 「帮我按 README 配置并部署 TripSharer，我的 Notion Token 是 xxx，页面 ID 是 xxx」
+> 「帮我按 README 配置并部署 TripSharer：
+> - Notion Token：xxx
+> - Google Maps API Key：xxx（国际城市）/ 高德 Key：xxx（中国大陆城市）
+> - Places 数据库 ID：xxx
+> - 总览页 ID：xxx
+> - [城市名] Notes 页 ID：xxx
+> - 城市：[城市英文名, 国家]（用于地图边界，如 Sydney, Australia）
+> - 部署方式：GitHub Pages / 腾讯云 COS」
 
 Agent 会读取本文档完成其余所有配置和部署。
 
@@ -147,8 +154,13 @@ Push 到 main，GitHub Actions 自动重新构建并部署
 
 **GitHub Pages（默认）**
 
-1. 仓库 Settings → Pages → Source 选 **GitHub Actions**
-2. Settings → Secrets → Actions 添加 `NOTION_TOKEN`（以及 `GOOGLE_MAPS_KEY` 或 `GAODE_KEY`）
+1. 设置 GitHub Secrets（Agent 可用 gh CLI 执行；也可手动在 Settings → Secrets → Actions 添加）：
+   ```bash
+   gh secret set NOTION_TOKEN --body "your_token"
+   gh secret set GOOGLE_MAPS_KEY --body "your_key"   # 国际城市
+   # gh secret set GAODE_KEY --body "your_key"       # 中国大陆城市
+   ```
+2. 仓库 Settings → Pages → Source 选 **GitHub Actions**（需在 GitHub 网页手动操作，一次性）
 3. 修改 `.github/workflows/deploy-gh-pages.yml` 中的 `my-trip` 为你的行程 ID
 4. Push → 自动构建部署，URL 格式为 `https://[username].github.io/[repo-name]`
 
