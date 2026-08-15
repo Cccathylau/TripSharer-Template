@@ -75,7 +75,11 @@ Run `npm run fetch my-trip` locally, then `git add data/ && git commit && git pu
 **Updated code**
 Push to main — GitHub Actions rebuilds and redeploys.
 
+<br>
+
 ---
+
+<br>
 
 ## Technical Reference
 
