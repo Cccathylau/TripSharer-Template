@@ -77,10 +77,6 @@ Push to main — GitHub Actions rebuilds and redeploys.
 
 <br>
 
----
-
-<br>
-
 ## Technical Reference
 
 ### Environment Variables
