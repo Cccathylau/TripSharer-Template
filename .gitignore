@@ -3,3 +3,9 @@ node_modules/
 dist/
 preview/
 data/*-*.json
+assets/*.mov
+assets/preview-2.jpg
+assets/preview-3.jpg
+assets/preview-5.jpg
+assets/preview-8.jpg
+assets/Xnip*.jpg
