@@ -715,11 +715,13 @@
       return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('')
     }
 
+    const DEFAULT_TRIP_ID = 'my-trip'
+
     function getTripId() {
       const p = new URLSearchParams(location.search)
       if (p.get('trip')) return p.get('trip')
       const m = location.pathname.match(/\/trips\/([^/]+)/)
-      return m ? m[1] : 'australia-2026'
+      return m ? m[1] : DEFAULT_TRIP_ID
     }
 
     // 将城市边界投影到 100×100 SVG，fillColor 来自 cityColors 配置，primaryColor 给标记点
@@ -1259,11 +1261,11 @@
         y = Math.max(0, Math.min(SVG_H - h, y))
         mapVb = { x, y, w, h }
         svg.setAttribute('viewBox', `${x.toFixed(2)} ${y.toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)}`)
-        // 描边 + 图标反向缩放：displayScale 归一化，消除桌面/手机差异
+        // 保留原有放大后的街区质感；桌面端限制增长上限，避免大范围城市过度增粗。
         const zoom = SVG_W / w
-        // 移动端 cap=10 细线；桌面端 cap=8 介于原值与移动端之间
         const zoomCap = Math.min(zoom, isMobile ? 10 : 8)
-        const baseScale = 1 / (displayScale * zoomCap)
+        const roadGrowth = Math.min(zoom / zoomCap, isMobile ? Infinity : 10)
+        const baseScale = roadGrowth / (displayScale * zoom)
         rDet.setAttribute('stroke-width', ((isMobile ? 0.8 : 1.0)  * baseScale).toFixed(3))
         rRes.setAttribute('stroke-width', ((isMobile ? 0.3 : 0.4)  * baseScale).toFixed(3))
         rTer.setAttribute('stroke-width', ((isMobile ? 0.4 : 0.5)  * baseScale).toFixed(3))
@@ -2117,7 +2119,7 @@
     initPoiPanel()
 
     if (!tripId) {
-      document.getElementById('trip-title').textContent = '请指定 trip ID（?trip=australia-2026）'
+      document.getElementById('trip-title').textContent = '请指定 trip ID'
     } else {
       fetch(`data/${tripId}.json`)
         .then(r => r.json())

@@ -1,6 +1,7 @@
 import { writeFileSync, mkdirSync, readFileSync } from 'fs'
 import 'dotenv/config'
 import { TRIPS } from '../trips.config.js'
+import { cachedCoordinates, clusterRoadFallback, usableCoordinates } from './map-cache.js'
 
 const TOKEN = process.env.NOTION_TOKEN
 const TRIP_ID = process.argv[2] || Object.keys(TRIPS)[0]
@@ -45,9 +46,9 @@ async function fetchPlaces() {
         lat: p.Lat?.number ?? null,
         lng: p.Lng?.number ?? null,
         rating: p.Rating?.number ?? null,
-        description: p.Description?.rich_text?.[0]?.plain_text || '',
+        description: p.Label?.rich_text?.[0]?.plain_text || '',
         shortNote: p['Short Note']?.rich_text?.[0]?.plain_text || '',
-        routeOrder: p.Route?.number ?? null,
+        routeOrder: p['Stop Order']?.number ?? null,
         day:        p['Day']?.number ?? null,
         dayNote:    p['Day Note']?.rich_text?.[0]?.plain_text || ''
       })
@@ -283,22 +284,37 @@ async function fetchPageTitle(pageId) {
   if (!pageId) return ''
   try {
     const data = await notionFetch(`https://api.notion.com/v1/pages/${pageId}`)
-    return data.properties?.title?.title?.[0]?.plain_text || ''
+    const titleProperty = Object.values(data.properties || {}).find(p => p.type === 'title' || Array.isArray(p.title))
+    return (titleProperty?.title || []).map(t => t.plain_text || '').join('').trim()
   } catch (e) {
     console.warn(`  fetchPageTitle 失败: ${e.message}`)
     return ''
   }
 }
 
+// 总览页放在分栏等块中时，先沿块的父级找到所属的行程页面。
+async function findTripPageId(overviewPageId) {
+  const page = await notionFetch(`https://api.notion.com/v1/pages/${overviewPageId}`)
+  let parent = page.parent
+  const seen = new Set()
+  while (parent?.type === 'block_id') {
+    if (seen.has(parent.block_id)) return ''
+    seen.add(parent.block_id)
+    const block = await notionFetch(`https://api.notion.com/v1/blocks/${parent.block_id}`)
+    parent = block.parent
+  }
+  return parent?.type === 'page_id' ? parent.page_id : ''
+}
+
 async function fetchTripTitle(overviewPageId) {
-  if (!overviewPageId) return ''
+  const fallback = trip.coverMeta?.title || TRIP_ID
+  if (!overviewPageId) return fallback
   try {
-    const data = await notionFetch(`https://api.notion.com/v1/pages/${overviewPageId}`)
-    if (data.parent?.type === 'page_id') return fetchPageTitle(data.parent.page_id)
-    return data.properties?.title?.title?.[0]?.plain_text || ''
+    const parentId = await findTripPageId(overviewPageId)
+    return (parentId && await fetchPageTitle(parentId)) || fallback
   } catch (e) {
     console.warn(`  fetchTripTitle 失败: ${e.message}`)
-    return ''
+    return fallback
   }
 }
 
@@ -306,8 +322,7 @@ async function fetchTripTitle(overviewPageId) {
 async function fetchOgDescription(overviewPageId) {
   if (!overviewPageId) return ''
   try {
-    const page = await notionFetch(`https://api.notion.com/v1/pages/${overviewPageId}`)
-    const parentId = page.parent?.type === 'page_id' ? page.parent.page_id : null
+    const parentId = await findTripPageId(overviewPageId)
     if (!parentId) return ''
     const blocks = await fetchPageBlocks(parentId)
     if (!blocks) return ''
@@ -485,23 +500,41 @@ function blocksToHtml(blocks) {
 }
 
 async function fetchOverpass(query) {
-  for (let attempt = 0; attempt <= 1; attempt++) {
-    const res = await fetch('https://overpass-api.de/api/interpreter', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'TripSharer/1.0' },
-      body: 'data=' + encodeURIComponent(query)
-    })
-    if (res.ok) return res.json()
-    const body = await res.text().catch(() => '')
-    const status = res.status
-    // 504/429 且还有重试机会：等待后重试一次
-    if (attempt === 0 && (status === 504 || status === 429)) {
-      const wait = status === 429 ? 15000 : 8000
-      console.warn(`  ⏳ Overpass ${status}，${wait / 1000}s 后重试...`)
-      await new Promise(r => setTimeout(r, wait))
-      continue
+  const maxAttempts = 3
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    let failure, retryable = true, wait = attempt * 2000
+    try {
+      const res = await fetch('https://overpass-api.de/api/interpreter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'TripSharer/1.0' },
+        body: 'data=' + encodeURIComponent(query),
+        signal: AbortSignal.timeout(75000)
+      })
+      if (res.ok) return await res.json()
+      // Do not print HTML error pages; the HTTP status is sufficient for diagnosis.
+      failure = `地图服务返回 HTTP ${res.status}`
+      retryable = [408, 429, 500, 502, 503, 504].includes(res.status)
+      if (res.status === 429) wait = 15000
+      await res.body?.cancel().catch(() => {})
+    } catch (error) {
+      const code = error.cause?.code || error.code || ''
+      if (error.name === 'TimeoutError' || error.name === 'AbortError' || code.includes('TIMEOUT')) {
+        failure = '地图请求超时（单次最多 75 秒）'
+      } else if (code === 'ENOTFOUND' || code === 'EAI_AGAIN') {
+        failure = `无法解析地图服务地址（${code}）`
+      } else if (['ECONNRESET', 'ECONNREFUSED', 'EPIPE', 'UND_ERR_SOCKET'].includes(code)) {
+        failure = `与地图服务的连接失败或中断（${code}）`
+      } else if (error instanceof SyntaxError) {
+        failure = '地图服务未返回有效 JSON 数据'
+      } else {
+        failure = '无法完成与地图服务的连接或读取响应'
+      }
     }
-    throw new Error(`Overpass HTTP ${status}: ${body.slice(0, 120)}`)
+    if (!retryable || attempt === maxAttempts) {
+      throw new Error(`Overpass：${failure}；已尝试 ${attempt} 次`)
+    }
+    console.warn(`  ⏳ Overpass：${failure}；${wait / 1000}s 后重试（第 ${attempt + 1}/${maxAttempts} 次）`)
+    await new Promise(resolve => setTimeout(resolve, wait))
   }
 }
 
@@ -552,7 +585,7 @@ out geom;`
 }
 
 async function fetchCityResidential(bbox) {
-  const [s, w, n, e] = bbox
+  const [s, w, n, e] = bbox.map(Number)
   const midLat = (s + n) / 2
   const midLng = (w + e) / 2
   const tiles = [
@@ -735,13 +768,19 @@ async function main() {
   // 将 Notion city 字段统一解析为 config key（支持中英文）
   for (const place of places) place.city = normalizeCityKey(place.city, trip)
 
-  // geocoding：仅对 Notion 中缺坐标的地点跑，已有坐标直接用
-  const existingCoords = {}
-  for (const p of (existingBase.places || [])) if (p.lat) existingCoords[p.id] = { lat: p.lat, lng: p.lng }
+  // Notion 坐标优先；普通更新复用同一地点、同一搜索输入的坐标，避免漂移。
+  const previousPlaces = new Map((existingBase.places || []).map(p => [p.id, p]))
+  const sameRegion = (existingBase.region || 'international') === (trip.region || 'international')
 
   let geocoded = 0
   for (const place of places) {
-    if (place.lat !== null) continue
+    if (usableCoordinates(place)) continue
+    const cached = sameRegion ? cachedCoordinates(place, previousPlaces.get(place.id)) : null
+    if (!FULL && cached) {
+      Object.assign(place, cached)
+      console.log(`  [Skip] ${place.name}: 定位已缓存`)
+      continue
+    }
     const cityBbox = trip.cityUrbanBBox?.[normalizeCityKey(place.city)] || null
     const cleanAddress = trip.region === 'domestic'
       // 国内保留中文，去掉括号备注（括号内容通常是景区说明，非地址）
@@ -761,15 +800,20 @@ async function main() {
     const cityHint = trip.region === 'domestic' ? (trip.cityZhNames?.[place.city] || '') : ''
     // 餐厅/购物/酒店必须在本市，跳过全局搜索直接用城市限定；景点可能是日游邻市，先全局搜
     const skipNoHint = trip.region === 'domestic' && /餐厅|购物|酒店|住宿/.test(place.category || '')
-    const coords = await geocode(searchTerm, cityBbox, trip.region === 'domestic', cityHint, skipNoHint, place.name)
+    let coords = await geocode(searchTerm, cityBbox, trip.region === 'domestic', cityHint, skipNoHint, place.name)
+    // 示例名称或双语名称可能无法匹配，改用实际地址再试一次。
+    if (!coords && addressForSearch && searchTerm !== addressForSearch) {
+      await new Promise(r => setTimeout(r, 1100))
+      console.log(`  按地址重试: ${place.name}`)
+      coords = await geocode(addressForSearch, cityBbox, trip.region === 'domestic', cityHint, skipNoHint)
+    }
     if (coords) {
       place.lat = coords.lat
       place.lng = coords.lng
       geocoded++
       console.log(`  已编码: ${place.name} (${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)})`)
-    } else if (existingCoords[place.id]) {
-      place.lat = existingCoords[place.id].lat
-      place.lng = existingCoords[place.id].lng
+    } else if (cached) {
+      Object.assign(place, cached)
       console.warn(`  ↩ geocode 失败，用旧坐标: ${place.name}`)
     } else {
       console.warn(`  ✗ 无坐标: ${place.name}`)
@@ -953,7 +997,9 @@ async function main() {
     const key = makeClusterKey(cl.city, cl.centroid)
     const maxDist = cl.places.reduce((m, p) => Math.max(m, distMeters(cl.centroid, p)), 0)
     const radius = Math.round(maxDist + 2000)
-    const cached = existingCity[cl.city]?.clusterRoads?.[key]
+    const roadCache = existingCity[cl.city]?.clusterRoads || {}
+    const fallback = sameRegion ? clusterRoadFallback(cl, existingBase.places || [], roadCache) : null
+    const cached = fallback?.key === key ? fallback.roads : null
     const names = cl.places.map(p => p.name).join(', ')
 
     if (!FULL && cached?.length > 0) {
@@ -974,13 +1020,20 @@ out geom;`
           if (el.type !== 'way' || !el.geometry || el.geometry.length < 2) continue
           ways.push(simplifyNodes(el.geometry, 20))
         }
-        clusterRoads[key] = ways
-        console.log(`  ✓ ${key}: ${ways.length} 条`)
+        if (ways.length > 0) {
+          clusterRoads[key] = ways
+          console.log(`  ✓ ${key}: ${ways.length} 条`)
+        } else if (cached?.length || fallback) {
+          clusterRoads[key] = cached?.length ? cached : fallback.roads
+          console.warn(`  ↩ ${key}: 新路网为空，保留同一地点组的旧路网；尚未获得新数据`)
+        } else {
+          console.warn(`  ✗ ${key}: 未取得局部详细路网`)
+        }
       } catch (e) {
         console.warn(`  ✗ ${key} 失败: ${e.message}`)
-        if (cached?.length > 0) {
-          clusterRoads[key] = cached
-          console.log(`  ↩ ${key}: 使用旧路网 (${cached.length} 条)`)
+        if (cached?.length > 0 || fallback) {
+          clusterRoads[key] = cached?.length ? cached : fallback.roads
+          console.warn(`  ↩ ${key}: 保留同一地点组的旧路网 (${clusterRoads[key].length} 条)；尚未获得新数据`)
         }
       }
       await new Promise(r => setTimeout(r, 2000))

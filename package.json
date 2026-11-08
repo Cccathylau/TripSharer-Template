@@ -1,15 +1,19 @@
 {
   "type": "module",
+  "engines": {
+    "node": ">=20.9.0"
+  },
   "scripts": {
     "fetch": "node scripts/fetch-notion.js",
     "build": "node scripts/build.js",
+    "preview": "node scripts/preview.js",
     "upload": "node scripts/upload-cos.js",
-    "deploy": "node scripts/build.js australia-2026 && node scripts/upload-cos.js australia-2026"
+    "deploy": "node scripts/deploy.js"
   },
   "dependencies": {
     "@turf/turf": "^7.3.5",
-    "cos-nodejs-sdk-v5": "^2.14.7",
+    "cos-nodejs-sdk-v5": "^3.0.0",
     "dotenv": "^16.0.0",
-    "sharp": "^0.34.5"
+    "sharp": "^0.35.5"
   }
 }

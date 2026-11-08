@@ -2,7 +2,9 @@
 node_modules/
 dist/
 preview/
-data/*-*.json
+.DS_Store
+assets/**/*.mov
+# Generated trip JSON is committed for GitHub Pages builds.
 assets/*.mov
 assets/preview-2.jpg
 assets/preview-3.jpg

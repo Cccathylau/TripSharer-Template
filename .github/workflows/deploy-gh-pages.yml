@@ -2,14 +2,27 @@ name: Deploy to GitHub Pages
 
 on:
   workflow_dispatch:
-  # Fork 后配置好 Secrets，可加回：
-  # push:
-  #   branches: [main]
+    inputs:
+      trip_id:
+        description: trips.config.js 中的行程 ID（留空使用第一个行程）
+        required: false
+        type: string
+  workflow_call:
+    inputs:
+      trip_id:
+        required: false
+        type: string
+  push:
+    branches: [main]
 
 permissions:
   contents: read
   pages: write
   id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
 
 jobs:
   deploy:
@@ -19,6 +32,8 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
 
       - uses: actions/setup-node@v4
         with:
@@ -28,7 +43,14 @@ jobs:
       - run: npm ci
 
       - name: Build
-        run: node scripts/build.js my-trip
+        env:
+          TRIP_ID: ${{ inputs.trip_id }}
+        run: |
+          trip_args=()
+          if [ -n "$TRIP_ID" ]; then trip_args=(--trip "$TRIP_ID"); fi
+          node scripts/check-project.js "${trip_args[@]}" --stage data
+          node scripts/build.js "$TRIP_ID"
+          node scripts/check-project.js "${trip_args[@]}" --stage build
 
       - uses: actions/configure-pages@v4
 

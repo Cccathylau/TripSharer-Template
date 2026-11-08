@@ -1,39 +1,35 @@
 export const TRIPS = {
   "my-trip": {
-    databaseId: "YOUR_PLACES_DATABASE_ID",
-    overviewPageId: "YOUR_OVERVIEW_PAGE_ID",
+    databaseId: "",
+    overviewPageId: "",
     cityPageIds: {
-      city1: "YOUR_CITY1_PAGE_ID",
-      city2: "YOUR_CITY2_PAGE_ID"
+      sydney: "",
+      melbourne: ""
     },
     citySearchTerms: {
-      city1: "City1 Name, Country",
-      city2: "City2 Name, Country"
+      sydney: "Sydney, Australia",
+      melbourne: "Melbourne, Australia"
     },
     cityColors: {
-      city1: "#E85D4A",
-      city2: "#2A9D8F"
+      sydney: "#E85D4A",
+      melbourne: "#2A9D8F"
     },
     // 城区核心 bbox [south, west, north, east]，用于路网抓取
-    cityUrbanBBox: {
-      city1: [LAT_S, LNG_W, LAT_N, LNG_E],
-      city2: [LAT_S, LNG_W, LAT_N, LNG_E]
-    },
+    cityUrbanBBox: {},
     // 百度地图搜索用的城市中文名（国际城市填英文即可）
     cityZhNames: {
-      city1: "City1",
-      city2: "City2"
+      sydney: "Sydney",
+      melbourne: "Melbourne"
     },
     // "international" or "domestic" (China mainland, uses Amap geocoding)
     region: "international",
-    countryName: "Your Country",
+    countryName: "Australia",
     theme: { primary: "#E85D4A" },
-    siteUrl: "https://your-username.github.io/TripSharer-Template",
+    siteUrl: "https://cccathylau.github.io/TripSharer-Template",
     coverMeta: {
       title: "My Trip",
-      description: "City1 · City2",
-      boundaryCity: "city1",
-      boundarySlice: [0, 100],
+      description: "Sydney · Melbourne",
+      boundaryCity: "sydney",
       coverPhoto: 1
     }
   }

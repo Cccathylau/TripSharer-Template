@@ -1,0 +1,4 @@
+interface:
+  display_name: "TripSharer"
+  short_description: "Generate and update travel map websites from Notion records"
+  default_prompt: "Use $tripsharer to generate a website from my Notion travel records and verify a local preview before publishing."
