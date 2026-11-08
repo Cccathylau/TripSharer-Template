@@ -208,6 +208,17 @@
 
     .home-overview .notion-content { text-align: center; }
 
+    /* 保留攻略整体居中；列表标记进入文字行，避免圆点与内容分离。 */
+    .home-overview .notion-content ul,
+    .home-overview .notion-content ol,
+    .city-overview .notion-content ul,
+    .city-overview .notion-content ol {
+      margin: 0 0 6px;
+      padding-inline-start: 0;
+      text-align: center;
+      list-style-position: inside;
+    }
+
     /* overview 区块所有字号由 --zoom（0.3→1）等比联动 */
     .overview-title {
       font-family: 'Playfair Display', 'Noto Serif SC', 'PingFang SC', Georgia, serif;
