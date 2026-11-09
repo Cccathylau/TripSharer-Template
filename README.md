@@ -1,147 +1,192 @@
 # TripSharer
 
-🌏 [English](README.en.md)
+🇨🇳 [中文版](README.zh.md)
 
-旅游回来，总被问攻略？把 Notion 中的旅行记录整理成地图网站，分享沿途地点和旅行心得。
+Back from a trip and everyone wants your recommendations? Turn your Notion travel records into a map website to share your favorite places and travel notes.
 
-TripSharer 是一个旅行地图网站模板。在 Notion 中填写内容，通过本地 AI Agent 完成配置、生成和预览，确认后再发布到自己的网址。
+TripSharer is a travel map website template. Fill in your content in Notion, use a local AI Agent to configure, generate, and preview the website, then publish it when you are ready.
 
 ![preview](assets/preview.jpg)
 
-[查看示例 →](https://au2026.cathylau.com/index.html)
+[Live Demo →](https://au2026.cathylau.com/index.html)
 
-[功能](#功能) · [使用步骤](#使用步骤) · [交给 Agent](#交给-agent) · [内容更新](#内容更新) · [自定义](#自定义) · [部署](#部署) · [常见问题](#常见问题)
+[Features](#features) · [Before You Start](#before-you-start) · [Use the Skill](#use-the-tripsharer-skill-recommended) · [Common Tasks](#common-tasks) · [Publish and Share](#publish-and-share) · [Technical Reference](#manual-setup-and-technical-reference) · [FAQ](#faq)
 
-## 功能
+## Features
 
-- **城市地图**：以手绘风格展示城市轮廓和已定位的旅行地点
-- **地点与筛选**：按分类浏览地点，查看标签、评分和备注
-- **每日路线**：按天查看地点顺序和当天备注
-- **总览与城市攻略**：从 Notion 读取行前信息、交通、住宿和旅行心得
-- **网址分享**：发布后通过链接访问，访客无需登录
-- **内容更新**：在 Notion 中继续补充旅行记录，重新生成并发布到原网址
+- **City maps**: Maps with a hand-drawn look, showing city outlines and place markers.
+- **Places and filters**: Browse categories, labels, ratings, and notes.
+- **Daily routes**: View each day’s stops in order, along with daily notes. Live traffic and turn-by-turn route planning are not included.
+- **Overview and city guides**: Read preparation notes, transport, accommodation, and travel tips from Notion.
+- **Share by URL**: Visitors can open your published website without logging in.
+- **Content updates**: Add travel records in Notion, regenerate, and publish to the same URL.
 
-## 适用 Agent
+## Before You Start
 
-- **适用工具**：Claude Code、Codex 等可操作本地项目的 AI Agent。
-- **所需能力**：读写项目文件、执行命令，并访问 Notion 和地图数据服务。
-- **权限受限时**：由 Agent 提供具体命令，在本地终端执行。仅支持文字对话的 Chatbot 无法独立完成配置和生成。
+The accounts below are for creating your own website. The quick preview only needs a local Agent and the runtime environment.
 
-## 使用步骤
+- **Notion account**: Record and manage your travels.
+- **GitHub account**: Keep a project copy and publish with GitHub Pages.
+- **Local AI Agent**: Claude Code, Codex, or another tool that can read and write project files, run commands, and access the network.
 
-**开始前需要准备什么？**
+You provide travel content, authorize account access, and confirm publication. The Agent handles setup, website generation, and checks with your input.
 
-- **Notion 账号**：填写和管理旅行记录。
-- **GitHub 账号**：保存项目副本，并用于 GitHub Pages 发布。
-- **本地 AI Agent**：协助配置项目、运行命令和生成网站，需具备上述操作能力。
+## Use the TripSharer Skill (Recommended)
 
-内容填写、账号授权和发布确认由使用者完成；项目配置、生成和检查可交给 Agent 协助。也可按下方的手动步骤操作。
+The [TripSharer Skill](skills/tripsharer/SKILL.md) guides a local Agent through setup, reading your Notion content, generating the website, and checking the preview. You provide content, authorize access, and confirm publication.
 
-| 步骤 | 操作 | 完成结果 |
-|------|------|----------|
-| **1. 复制 Notion 模板** | 打开 [Notion 模板](https://www.notion.so/cccathylau/TripSharer-Template-17a0c7ad070a82de8cbb01e252863fee)，复制到自己的工作区 | 得到可编辑的总览、城市攻略和 Places 数据库 |
-| **2. 填写旅行内容** | 按模板说明填写内容，或先用示例试跑；由 Agent 检查字段 | 准备好地点、评分、备注和攻略 |
-| **3. 准备网站项目** | 在 GitHub Fork 本仓库；由 Agent 协助 clone 到电脑、检查环境并安装依赖 | 得到独立的项目副本和本地工作目录 |
-| **4. 授权读取 Notion** | 创建 Integration 并授权复制后的模板；由 Agent 协助配置 Token 和页面 ID | 本地程序能够读取旅行内容 |
-| **5. 生成并预览** | 由 Agent 读取内容并生成网页，打开[本地预览](#本地预览)检查效果 | 确认内容与操作正常，准备发布 |
-| **6. 确认并发布** | 选择发布方式，确认内容可以公开后，由 Agent 协助发布并检查网址 | 通过 [GitHub Pages](#github-pages默认) 或[腾讯云 COS](#腾讯云-cos适合国内访问)获得可分享的网址 |
-| **7. 更新内容** | 在 Notion 补充记录，由 Agent 重新读取、生成和检查，确认后发布 | 原网址显示新内容 |
+The Agent reads the Skill file included in this project; no global installation is needed.
 
-**Notion 配置**
+### Choose How to Start
 
-- **创建连接**：在 [Notion Developer tools](https://www.notion.so/my-integrations) 中创建 Integration，选择模板所在工作区，启用读取内容权限。
-- **授权页面**：在复制后的总览、城市攻略和 Places 数据库右上角 Connections 中添加该连接。
-- **填写配置**：Token 保存到本地 `.env`，不提交到 Git；页面 ID 填入 `trips.config.js`，使用复制后的页面与数据库。获取方式见[配置参考](#tripsconfigjs-配置)。
+| Option | When to use it | Steps |
+|---|---|---|
+| **Quick preview** | Explore the website before setting up Notion | Use the bundled sample data → build → preview locally, with no Notion Token |
+| **Create your own website** | Share your own travel records | Duplicate the Notion template into your workspace → edit the content → authorize access → generate and preview → publish after confirming |
 
-**地址定位与 API Key**
+The quick preview is optional. Both options generate a complete website; only the content source differs.
 
-- **已有坐标**：填写 Lat、Lng 的地点直接使用现有坐标。
-- **国际城市，坐标留空**：使用 Nominatim 尝试定位；[Google Maps API Key](https://console.cloud.google.com/)为推荐项。
-- **中国大陆城市，坐标留空**：需配置[高德 API Key](https://lbs.amap.com/)。
-- **定位失败**：修正 Address，或补填 Lat、Lng 后重新读取。
+#### Quick Preview
 
-## 交给 Agent
-
-**Skill 本地试用（初版）**
-
-仓库中的 [TripSharer Skill](skills/tripsharer/SKILL.md) 已提供配置、生成、预览和更新流程，目前为本地试用稿，尚未完成独立会话验收或多 Agent 安装验证。可在本地 Agent 中打开本项目，要求先阅读该文件并按流程执行；这不等同于已安装可自动调用的 Skill。
+You can tell the Agent:
 
 ```text
-阅读 skills/tripsharer/SKILL.md，按其中流程根据我的 Notion 旅行记录生成网站并完成本地预览。先检查已有配置，缺少的信息逐项引导填写；不提交、推送或发布。
+Read the TripSharer Skill and generate a local preview using the bundled sample data. Do not connect to Notion or publish.
 ```
 
-未使用 Skill 时，也可使用以下指令：
+The `data/my-trip*.json` files contain a snapshot exported from the Notion template and its map data. They do not update automatically when Notion changes. You do not need to duplicate the template, configure a Token, or run fetch. Node.js 20.9+ and project dependencies are still required.
 
-Fork 仓库后，将仓库链接或本地目录与下面这段指令一起交给 Agent。已知的页面 ID 可直接填写，也可先提供页面链接，由 Agent 协助整理；尚未准备好的配置可逐项完成。
+Alternatively, run these commands in the project directory (run `npm ci` first on a fresh installation):
 
-> 帮我按 README 配置 TripSharer，先生成网站并完成本地预览，暂不提交、推送或发布。
->
-> - 项目：我的 Fork 仓库链接 / 本地项目目录
-> - Notion Token 和所需 API Key：保存在本地 `.env`；尚未填写时请指导我配置，不要在输出中展示
-> - 复制后的 Places 数据库链接或 ID：xxx
-> - 总览页链接或 ID：xxx
-> - [城市名] Notes 页链接或 ID：xxx
-> - 城市：[城市英文名, 国家]（用于地图边界，如 Sydney, Australia）
-> - 发布方式：GitHub Pages / 腾讯云 COS / 预览后决定
->
-> 每一步先说明目的和影响，再执行。只修改这个项目，不改我的其他项目或 Notion 内容；需要调整内容时先与我确认。预览通过后，再说明发布步骤，由我确认是否提交、推送和发布。
+```bash
+node scripts/check-project.js --trip my-trip --stage data
+npm run build -- my-trip
+node scripts/check-project.js --trip my-trip --stage build
+npm run preview
+```
+
+Continue only after each command succeeds, then open the preview URL printed in the terminal. This path checks data and build output, skipping the configuration and network checks that require a Token.
+
+### Create Your Own Website
+
+
+The Agent will guide you through each step, starting with project setup. Existing projects and settings are preserved; missing information can be added along the way.
+
+```text
+Use the TripSharer template to generate and preview a website from my Notion travel records.
+
+First read the repository README, AGENTS.md, and skills/tripsharer/SKILL.md.
+Check what is already in place, then guide me through the remaining steps: setting up the local project, duplicating the Notion template, adding travel records, authorizing access, and configuring the project.
+Confirm where to save the project before downloading it. If the project already exists, preserve its settings and changes.
+Guide me through entering credentials locally. Never display them in chat or logs.
+Work only in this task’s project folder. I will fill in the Notion content.
+Generate a local preview for me to review first. Once I have checked the content and appearance, help me choose a publishing option and confirm with me before publishing.
+```
+
+Here is what each stage involves:
+
+| Stage | What you do | What the Agent does |
+|---|---|---|
+| Prepare the project | Confirm where to save it | Read the project instructions, download the project, check the environment, and help create a Fork if needed |
+| Prepare content | Duplicate the [Notion template](https://www.notion.so/cccathylau/TripSharer-Template-17a0c7ad070a82de8cbb01e252863fee), fill it in or keep sample content, and provide page links | Explain the required pages and city information |
+| Authorize and configure | Authorize Notion access and enter secrets locally | Guide setup and check access to the required pages |
+| Generate and preview | Open the preview and check the content and appearance | Fetch, generate, and inspect the website |
+| Publish and update | Choose a destination and confirm public content | Publish with your approval and update the website when requested |
+
+If a local project already exists, open its folder in the Agent and say: “Read `skills/tripsharer/SKILL.md` and generate and preview the website using the existing configuration.” The Agent will check the existing settings and help fill in anything missing; you do not need to start over.
+
+Generation requires Node.js **20.9 or newer**; the Agent can check the environment and help install dependencies. Decide the publishing destination and URL after previewing. A text-only chatbot without local file and command access cannot complete the workflow independently. If access is restricted, the Agent can provide commands for your local terminal.
+
+## Common Tasks
+
+After asking the Agent to read the Skill, describe your next task in natural language:
+
+| You can say | What the Agent does |
+|---|---|
+| Generate a travel website from my Notion records and preview it | Check configuration and access, read content, generate and inspect the local website |
+| I added a few places; update the preview | Preserve settings, fetch and rebuild, then check the new content |
+| I changed the city colors; check the result | Check Notion/configuration color priority, regenerate and preview |
+| Help me prepare to publish to GitHub Pages | Check publishing settings, review what will be public, explain the steps, and publish with your approval |
+
+Notion edits do not immediately update the website. After checking the preview, publish again to update the live version. See [Updating Content](#updating-content) and [Customization](#customization).
+
+## Publish and Share
+
+GitHub Pages is the default workflow. Consider Tencent Cloud COS if mainland China access is a priority. Complete the local preview and confirm that places, dates, and guide content can be public. Agents need explicit authorization to commit, push, or publish.
+
+COS and geocoding APIs may incur charges. Review the services you use. Budget alerts and traffic limits are optional and should reflect your own needs; example amounts and thresholds are not publishing requirements.
+
+### GitHub Pages (Default)
+
+**Generate locally, publish through GitHub**
+
+1. Verify the local preview and confirm the content may be public. Set `siteUrl` to `https://[username].github.io/[repo-name]`.
+2. In repository Settings → Pages → Source, select **GitHub Actions**.
+3. Commit the project changes, `trips.config.js`, and generated `data/*.json`, then push to main. The default is the first configured trip. Keep `.env` local.
+4. Check Deploy to GitHub Pages in Actions, then open the published URL. Manual runs optionally accept `trip_id` to select a trip.
+
+This path uses generated data and does not require a Notion Token in GitHub. Actions checks data before building and output after building; a failed check stops publication.
+
+`dist/data/` contains only the selected trip and its configured cities. Other trip data committed to a public repository remains accessible through that repository; review all committed content before publishing.
+
+Optional: let GitHub read Notion:
+
+Add `NOTION_TOKEN` in Settings → Secrets and variables → Actions. Add `GOOGLE_MAPS_KEY` if used, or `GAODE_KEY` for mainland China places needing automatic coordinates. Run Fetch Notion Data manually. It checks fetched data before committing, then deploys to GitHub Pages. Failed checks stop the workflow.
+
+### Tencent Cloud COS (for Mainland China Access)
+
+For mainland China access, consider the COS Hong Kong region. A custom domain and HTTPS setup are needed for new COS buckets to serve browser previews. Configure `cosUrl` with the bucket endpoint and `siteUrl` with your public website root. Follow the [COS deployment guide (Chinese)](docs/cos-setup.md) to set up the account, bucket, access permissions, and credentials. Once setup and preview checks are complete, run:
+
+```bash
+npm run deploy -- my-trip
+```
+
+The COS deployment command rebuilds and uploads the website. It does not fetch the latest Notion content or automatically check the data and build output. Complete the checks in [Local Preview](#local-preview) before publishing. Uploads overwrite matching objects but do not remove old objects. The bundled GitHub Actions publish to Pages, not COS.
+
+## Updating Content
+
+**After editing Notion** (adding places, ratings, or guide content)
+
+Notion changes do not immediately update the website:
+
+1. **Fetch and generate**: Follow [Local Preview](#local-preview) to fetch, check data, build, and check output. Resolve failures before continuing.
+2. **Check the preview**: Refresh a running preview or start `npm run preview`, then verify the changes.
+3. **Publish the update**: Confirm the content, then use the original publishing destination.
+
+- **GitHub Pages**: Commit updated `data/` and any changed `trips.config.js`, then push to main to build and publish through Actions.
+- **Tencent Cloud COS**: Run `npm run deploy -- my-trip` to rebuild and upload.
+
+**Optional: update through GitHub Actions**
+
+After configuring GitHub Secrets, open Actions → Fetch Notion Data → Run workflow and enter the trip ID. This reads Notion, automatically commits data, and publishes to GitHub Pages without a local preview step.
+
+**After editing code**
+
+Rebuild and inspect locally before committing. Pushes to main trigger GitHub Pages deployment; COS requires another deploy command. Agents need explicit authorization for commit, push, and publication.
+
+## Customization
+
+- **Trip title**: Edit the Notion template parent page title. Keep the overview under that page; columns are supported. If the parent title cannot be read, `coverMeta.title` is used.
+- **City display names**: Set `cityZhNames` in `trips.config.js`; otherwise the city guide page title is used. City keys must still match the Places City field.
+- **Place categories**: Edit the Notion Category field. Filters are generated from place content.
+- **Island and city colors**: Use a 🎨 Callout on each city guide page.
+
+### Change Island and City Colors
+
+1. Open the corresponding city guide page in Notion.
+2. Add or edit a Callout with the 🎨 icon. Enter a color name or six-digit Hex value, such as `蓝色`, `coral`, or `#2A9D8F`.
+3. Fetch, rebuild, and refresh the preview; publish after checking the result.
+
+The color applies to the homepage island and related city styling. The icon must be 🎨; the Callout's own background color does not set the website color. Keep one color setting per city.
+
+You can also set `cityColors` in `trips.config.js`. Priority is **recognized Notion color → configured city color → automatic palette**. Remove the Notion color setting when switching to configuration colors.
 
 <details>
-<summary>手动配置步骤</summary>
+<summary>Color names and values</summary>
 
-1. Fork 并 clone 仓库，确认 Node.js 20.9 或更新版本已安装，再运行 `npm ci`
-2. 首次将 `.env.example` 复制为 `.env`，填入 Token 和所需 API Key；可选项不使用时留空，已有 `.env` 不要覆盖
-3. 编辑 `trips.config.js`，填入复制后的 Notion 各页面 ID、城市信息和最终发布地址 `siteUrl`；不要使用原模板的页面 ID
-4. 按[本地预览](#本地预览)中的命令读取内容、生成网页并检查
-5. 确认内容正确且可以公开后，按[部署](#部署)步骤提交和发布。由 Agent 操作时，先取得明确授权；不要提交 `.env`
+Use a Chinese name, English name, or Hex value from this table. Use Hex for an exact color.
 
-</details>
-
-## 内容更新
-
-**更新了 Notion 内容**（新增地点、修改评分或补充攻略）
-
-Notion 修改不会即时同步网站。更新分为三步：
-
-1. **读取与生成**：按[本地预览](#本地预览)中的顺序运行读取、数据检查、构建和构建检查；检查失败时先处理，再继续。
-2. **检查预览**：预览已在运行时刷新页面；否则运行 `npm run preview`，检查修改是否生效。
-3. **发布更新**：确认内容正确后，按首次选择的方式发布。
-
-- **GitHub Pages**：提交更新后的 `data/`；配置有变化时一并提交 `trips.config.js`，推送到 main 后由 Actions 构建并发布。
-- **腾讯云 COS**：运行 `npm run deploy -- my-trip`，重新构建并上传。
-
-**可选：通过 GitHub Actions 更新**
-
-配置 GitHub Secrets 后，在仓库 Actions → Fetch Notion Data → Run workflow 中填写行程 ID。此操作会读取 Notion、自动提交数据，并直接发布到 GitHub Pages，不包含本地预览步骤。
-
-**更新了代码**
-本地重新构建并检查后，再提交代码。GitHub Pages 随 main 分支推送自动构建并发布；COS 需要重新运行 deploy。由 Agent 操作时，提交、推送和发布均需用户明确授权。
-
-<br>
-
-## 自定义
-
-- **旅行标题**：修改 Notion 模板主页的标题。总览页应保留在该主页下，分栏内也可读取；无法读取主页标题时，使用配置中的 `coverMeta.title`。
-- **城市显示名**：在 `trips.config.js` 的 `cityZhNames` 中设置；未设置时读取对应城市攻略页的标题。显示名可以更改，城市 key 仍需与 Places 的 City 字段一致。
-- **地点分类**：在 Notion 的 Category 字段中添加或修改分类，网页根据地点内容生成筛选选项。
-- **岛屿与城市配色**：通过各城市攻略页的 🎨 Callout 设置，具体方式如下。
-
-### 修改岛屿与城市配色
-
-1. 打开 Notion 中对应的城市攻略页。
-2. 添加或编辑一个图标为 🎨 的 Callout，在正文中填写颜色名或六位 Hex 色值，例如 `蓝色`、`coral`、`#2A9D8F`。
-3. 重新读取内容、生成网页并刷新预览；检查后再发布更新。
-
-城市颜色用于首页岛屿和城市页面的相关配色。Callout 的图标需为 🎨；修改 Callout 自身的背景色不会设置网站颜色。每个城市建议只保留一条配色设置。
-
-也可直接设置 `trips.config.js` 中的 `cityColors`。读取时的优先级为：**Notion 中可识别的颜色 → 配置中的城市颜色 → 自动分配颜色**。要改用配置颜色，应同时移除 Notion 中的配色设置。
-
-<details>
-<summary>颜色名与色值参考</summary>
-
-以下为程序内置的基础颜色。可填写表中的中文名、英文名或 Hex 色值；如需指定准确颜色，建议直接填写 Hex。
-
-| 中文名 | 英文名 | Hex |
+| Chinese | English | Hex |
 |--------|--------|-----|
 | 红 | red | `#C0524A` |
 | 砖红 | brick | `#B84C3C` |
@@ -165,64 +210,91 @@ Notion 修改不会即时同步网站。更新分为三步：
 | 白 | white | `#F5F1EC` |
 | 黑 | black | `#2C2C2C` |
 
-颜色名前可加“亮、浅、淡”提亮，或“深、暗”压暗，例如 `亮蓝色`、`淡绿色`。基础色中的“深蓝”会优先按表中固定色值识别。此表为颜色名映射，未指定颜色时的自动分配使用另一组调色板。
+Color names can use the Chinese prefixes “亮、浅、淡” to lighten, or “深、暗” to darken. The predefined “深蓝” name uses its fixed value above. These name mappings differ from the automatic palette.
 
 </details>
 
-## 技术配置参考
+## Manual Setup and Technical Reference
 
-### 环境变量
+<details>
+<summary>Manual setup steps</summary>
 
-| 变量名 | 用途 | 必填 |
-|--------|------|------|
-| `NOTION_TOKEN` | Notion Integration Token | 是 |
-| `GOOGLE_MAPS_KEY` | Google 地理编码，国际城市精度更高 | 推荐 |
-| `GAODE_KEY` | 高德地图 API Key | 国内地点需要自动定位时 |
-| `TENCENT_SECRET_ID` | 腾讯云 COS 上传凭证 | 仅 COS 部署需要 |
-| `TENCENT_SECRET_KEY` | 腾讯云 COS 上传凭证 | 仅 COS 部署需要 |
+1. Fork and clone the repository, install Node.js 20.9 or newer, then run `npm ci`.
+2. Copy `.env.example` to `.env` only if absent. Enter the Token and required API keys; leave unused optional values blank. Preserve an existing `.env`.
+3. Edit `trips.config.js` with your duplicated Notion IDs and city settings. Set `siteUrl` when the publishing URL is known; it does not block local preview. Do not use the original template's page IDs.
+4. Follow [Local Preview](#local-preview) to fetch, generate, and check.
+5. Confirm the content may be public, then follow [Publish and Share](#publish-and-share). Agents need explicit authorization; never commit `.env`.
 
-### trips.config.js 配置
+</details>
 
-保留文件中的 `export const TRIPS = { ... }` 结构，按以下用途填写各项：
+### Notion Configuration
 
-- **连接 Notion**：Places 数据库、总览页和各城市攻略页的 ID。
-- **定义旅行**：城市 key、显示名称、国家和配色。Notion 的 City 字段需与城市 key 一致，例如 `sydney`。
-- **准备发布**：最终网站地址 `siteUrl`。
-- **可选设置**：`cityUrbanBBox` 用于限定城区路网范围，可先留空。
+- **Create a connection**: Create an Integration in [Notion Developer tools](https://www.notion.so/my-integrations), select the template's workspace, and enable read-content access.
+- **Authorize pages**: Add the Integration through Connections on the duplicated overview, city guide pages, and Places database.
+- **Configure locally**: Store the Token in `.env`, never in Git or chat. Put duplicated page/database IDs in `trips.config.js`.
+- **Verify access**: Check that the local program can read the database and every required page. A ChatGPT Notion connection does not configure this project's local Token or permissions.
 
-`my-trip` 是行程标识，下面示例为 `TRIPS` 中的一个条目；命令中的行程标识必须与配置一致。
+**Geocoding and API keys**
+
+- Places with Lat/Lng use those coordinates directly.
+- International places without coordinates use Nominatim; a [Google Maps API key](https://console.cloud.google.com/) is recommended.
+- Mainland China places needing automatic coordinates require a [Gaode API key](https://lbs.amap.com/).
+- If geocoding fails, correct Address or fill Lat/Lng, then fetch again.
+
+### Environment Variables
+
+| Variable | Purpose | Required |
+|----------|---------|----------|
+| `NOTION_TOKEN` | Notion Integration Token | Yes |
+| `GOOGLE_MAPS_KEY` | Google geocoding, better accuracy for international cities | Recommended |
+| `GAODE_KEY` | Gaode geocoding | Mainland China places without coordinates |
+| `TENCENT_SECRET_ID` | Tencent Cloud COS credentials | COS deployment only |
+| `TENCENT_SECRET_KEY` | Tencent Cloud COS credentials | COS deployment only |
+
+### trips.config.js
+
+Keep the `export const TRIPS = { ... }` structure. Configure the Places database, overview and city page IDs; city keys, display names, search terms and country; and the final `siteUrl` for publishing. City keys must match the Notion City values. Leave optional `cityUrbanBBox` empty unless needed.
+
+`my-trip` identifies one entry in `TRIPS`; use that same ID in commands. The following example is one entry:
 
 ```js
 "my-trip": {
-  databaseId: "",          // Notion Places 数据库 ID
-  overviewPageId: "",      // 行程总览 Page ID
-  cityPageIds: {           // 城市 key → 城市 Notes Page ID
+  databaseId: "",          // Notion Places database ID
+  overviewPageId: "",      // Overview page ID
+  cityPageIds: {           // city key → city Notes page ID
     sydney: "",
   },
-  citySearchTerms: {       // 城市 key → 城市边界搜索词（用于抓取地图轮廓）
+  citySearchTerms: {       // city key → search term for map boundary
     sydney: "Sydney, Australia",
   },
-  cityColors: {            // 可选，城市主题色；未指定时自动从调色板分配
+  cityColors: {            // optional; auto-assigned from palette if omitted
     sydney: "#E85D4A",
   },
-  cityUrbanBBox: {         // 可选，城区 bbox [南, 西, 北, 东]，限定路网抓取范围
+  cityUrbanBBox: {         // optional; bbox [south, west, north, east] for road data
     // sydney: [-33.95, 151.10, -33.80, 151.30],
   },
-  cityZhNames: {           // 城市中文名，用于百度地图导航链接
-    sydney: "城市名",
+  cityZhNames: {           // Chinese city names for Baidu Maps navigation links
+    sydney: "City Name",
   },
-  region: "international", // "international" 或 "domestic"（中国大陆，使用高德地理编码）
+  region: "international", // "international" or "domestic" (mainland China, uses Gaode)
   countryName: "Australia",
   theme: { primary: "#E85D4A" },
   siteUrl: "https://your-username.github.io/TripSharer-Template",
 }
 ```
 
-**Notion ID 获取方式**：打开页面或数据库，URL 格式为 `notion.so/[workspace]/[32位ID]?v=...`，取 `?v=` 前的 32 位字符串（去掉连字符）。
+**How to get a Notion ID**: Open the page or database, copy the URL. The ID is the 32-character string before `?v=` (remove hyphens).
 
-### 本地预览
+### Local Preview
 
-在仓库目录运行：
+Use your configured trip ID instead of `my-trip` if different. First check local configuration and actual Notion access from the repository directory:
+
+```bash
+node scripts/check-project.js --trip my-trip --stage config
+node scripts/check-project.js --trip my-trip --stage config --network
+```
+
+After these checks pass, run each command in order and resolve failures before proceeding:
 
 ```bash
 npm run fetch -- my-trip
@@ -232,85 +304,57 @@ node scripts/check-project.js --trip my-trip --stage build
 npm run preview
 ```
 
-前一条命令成功后再运行下一条。打开终端显示的本地地址，检查：
+Open the local URL printed in the terminal. Check map pins, Label, ratings, Short Note, stop order for each day, Day Note, overview, and city notes. The preview server runs only on your computer; press Ctrl+C to stop. `my-trip` must match the configured trip ID. Building another trip automatically updates the default trip loaded by the website.
+Passing file checks is not enough: open the website and test its content and interactions. Fetch updates `data/`, and build regenerates `dist/`; do not keep unique manual work in `dist/`. These commands do not publish the website.
 
-- 城市、地点及分类筛选。
-- 地点弹窗中的 Label、评分和 Short Note。
-- 每日路线顺序和 Day Note。
-- 总览与各城市攻略。
+Keep the terminal running while previewing. After editing Notion, run fetch and build again, then refresh the page. Restarting preview may change the port in its URL. Without a cover photo, the build uses a default background and still generates the website.
 
-预览期间保持终端运行，按 Ctrl+C 停止；重新启动时地址中的端口可能改变。没有封面照片时，构建会使用默认底色。
+The example configuration uses `sydney` and `melbourne`, matching the Notion template. Fill in the page IDs to use that example. For your own trip, update the city keys, search terms, display names, and country together. Leave `cityUrbanBBox` empty to use city boundary bounds.
 
-配置示例与 Notion 模板使用 `sydney`、`melbourne` 两个城市。填写页面 ID 后可用于这份示例；改成自己的旅行时，同步修改城市 key、搜索词、显示名称和国家。`cityUrbanBBox` 可保持为空，由程序使用城市边界范围。
-
-### Notion 数据库结构
+### Notion Database Schema
 
 **Places Database**
 
-| 字段名 | 类型 | 说明 |
-|--------|------|------|
-| Name | Title | 地点名称 |
-| City | Select | 城市 key，需与 `trips.config.js` 的城市 key 一致 |
-| Category | Select | 分类（景点 / 餐厅 / 购物等） |
-| Address | Rich Text | 地点地址；Lat/Lng 留空时据此获取坐标 |
-| Lat | Number | 纬度，留空时自动抓取 |
-| Lng | Number | 经度，留空时自动抓取 |
-| Rating | Number | 评分 1–5 |
-| Label | Rich Text | 简短标签，显示在地图弹窗 |
-| Short Note | Rich Text | 一行概括，显示在弹窗评分下方 |
-| Day | Number | 所属天数（1/2/3…），用于路线视图分组 |
-| Stop Order | Number | 当天内顺序 |
-| Day Note | Rich Text | 当天整体备注，只需在当天第一个地点填写 |
+| Field | Type | Description |
+|-------|------|-------------|
+| Name | Title | Place name |
+| City | Select | City key — must match the key in `trips.config.js` |
+| Category | Select | Type (attraction / restaurant / shopping, etc.) |
+| Address | Rich Text | Place address; used for geocoding when Lat/Lng are blank |
+| Lat | Number | Latitude; auto-fetched if blank |
+| Lng | Number | Longitude; auto-fetched if blank |
+| Rating | Number | Rating 1–5 |
+| Label | Rich Text | Short label, shown in the map popup |
+| Short Note | Rich Text | One-line summary, shown below the rating |
+| Day | Number | Day number (1/2/3…), used for route grouping |
+| Stop Order | Number | Order within the day |
+| Day Note | Rich Text | Day-level note; fill once on the first place of the day |
 
-**Overview Page 和城市 Notes Page**
+**Overview Page and City Notes Pages**
 
-- **Overview Page**：出发前信息（SIM 卡、货币、打包清单等），支持段落、H1 标题、有序 / 无序列表
-- **城市 Notes Page**：每个城市一个页面，交通 / 贴士 / 购物等内容；城市显示名优先使用 `cityZhNames`，未设置时读取页面标题
-- **城市主题色**：通过图标为 🎨 的 Callout 设置，操作与色值参考见[自定义配色](#修改岛屿与城市配色)
+- **Overview Page**: Pre-trip info (SIM card, currency, packing list, etc.). Supports paragraphs, H1 headings, ordered/unordered lists.
+- **City Notes Pages**: One page per city for transport tips, local advice, etc. Display names use `cityZhNames` first, or the page title when no override is configured.
+- **City theme color**: Add a Callout block anywhere on the page with a 🎨 emoji, and write a hex value (`#E85D4A`) or color name (`coral`). It's picked up automatically during fetch.
 
-### 部署
+## FAQ
 
-#### GitHub Pages（默认）
+**Notion connection fails or access is denied**
+Run the configuration network check. Confirm `.env`, the Integration workspace, and access to the duplicated database, overview, and every city page. DNS errors such as `ENOTFOUND` require network troubleshooting and do not establish whether the Token or permissions are valid.
 
-**本地生成，GitHub 发布**
+**Configuration passes, but map details are missing**
+Configuration checks do not replace data checks. If local detailed roads are missing, retry a normal fetch and check data again; do not start by clearing all caches.
 
-1. 确认本地预览通过，内容可以公开；将 `siteUrl` 设置为 `https://[username].github.io/[repo-name]`。
-2. 在仓库 Settings → Pages → Source 中选择 **GitHub Actions**。
-3. 提交 `trips.config.js` 和生成的 `data/*.json`，推送到 main。默认构建配置中的第一个行程；`.env` 保留在本地。
-4. 在 Actions 中查看 Deploy to GitHub Pages 的执行结果，完成后打开网站地址检查。也可手动运行该流程，填写 `trip_id` 选择行程。
+**Notion changes do not appear**
+Fetch, rebuild, and refresh the local preview. Republish to update the live website; refreshing the public page alone does not read Notion.
 
-这条路径使用已生成的数据，不需要将 Notion Token 添加到 GitHub。Actions 会在构建前检查数据、构建后检查输出；检查失败不会继续发布。
+**Geocoding fails**
+Identify the places without coordinates, correct Address or supply Lat/Lng in Notion, then fetch again. Set `GAODE_KEY` for mainland China places needing automatic coordinates.
 
-`dist/data/` 只包含选定行程及其配置城市的数据。公开仓库中已提交的其他行程数据仍可被访问，提交前应一并确认公开范围。
+**Fetch is slow**
+The first run downloads city boundaries, roads, and water data. Duration depends on the city area and network; later runs reuse map caches.
 
-**可选：让 GitHub 读取 Notion**
+**GitHub Actions fails**
+Check the failed step: Notion reads require page access, correct IDs, and Secrets; build failures require valid configuration and data; publication requires Pages Source to be GitHub Actions.
 
-在仓库 Settings → Secrets and variables → Actions 中添加：
-
-- `NOTION_TOKEN`：读取 Notion 内容。
-- `GOOGLE_MAPS_KEY`：可选，用于国际地点自动定位。
-- `GAODE_KEY`：国内地点需要自动定位时填写。
-
-随后运行 Fetch Notion Data 流程。它会读取内容，通过数据检查后自动提交生成的数据，再发布到 GitHub Pages；检查失败会停止。
-
-#### 腾讯云 COS（适合国内访问）
-
-面向国内访问时可选择腾讯云 COS 香港地域。账号、存储桶、访问方式、上传凭证和费用设置见 [COS 部署指引](docs/cos-setup.md)，配置后运行：
-
-```bash
-npm run deploy -- my-trip
-```
-
-### 常见问题
-
-**地理编码失败**
-检查输出中哪些地点缺少坐标，补充或修正 Notion 的 Address，必要时填写 Lat、Lng 后重新读取。中国大陆城市需设置 `GAODE_KEY`。
-
-**fetch 很慢**
-首次需要下载城市边界、路网和水域数据，耗时取决于城市范围和网络情况；后续运行会复用已有地图缓存。
-
-**GitHub Actions 失败**
-先查看失败的步骤：读取 Notion 时检查页面授权、ID 和 Secrets；构建时检查配置与数据文件；发布时检查 Pages Source 是否设为 GitHub Actions。
-
-**COS 跨域报错**
-COS bucket 需配置 CORS，参考 `docs/cos-setup.md`
+**COS CORS error**
+Configure CORS on the bucket. See [COS deployment guide (Chinese)](docs/cos-setup.md).

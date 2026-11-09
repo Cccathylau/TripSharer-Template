@@ -11,3 +11,9 @@ assets/preview-3.jpg
 assets/preview-5.jpg
 assets/preview-8.jpg
 assets/Xnip*.jpg
+
+# Local project notes; not part of the public template.
+docs/project-status.md
+
+# Personal configuration backup; keep local.
+trips.config.local-backup.js

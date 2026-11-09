@@ -4,7 +4,7 @@ Use findings from `scripts/check-project.js`; do not print raw `.env` contents o
 
 ## Environment
 
-- Node below 20: locate a compatible executable or guide installation. Prefer a per-session PATH or absolute executable over a global shell change.
+- Node below 20.9: locate a compatible executable or guide installation. Prefer a per-session PATH or absolute executable over a global shell change.
 - Dependency download ENOTFOUND: the execution environment cannot resolve the service. This is not proof that the user's normal terminal has the same problem. Provide an installation command for that terminal if necessary.
 - sharp import failure: check installation platform/architecture and lockfile installation. Do not bypass cover rendering and report a complete build.
 - npm audit advisories: identify affected dependencies and compatible upgrade paths. Do not run `npm audit fix --force`. Publishing requires a separate decision after the actual risk and outstanding checks are understood.

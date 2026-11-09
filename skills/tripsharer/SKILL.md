@@ -21,13 +21,13 @@ Guide the user from Notion travel records to a working local website. Reuse the 
 
 ## 1. Identify the task and project
 
-Classify the request as initial setup, content refresh, appearance adjustment, or preview only. Ask only for missing information that blocks the next stage.
+Classify the request as bundled sample preview, initial setup with personal Notion content, content refresh, appearance adjustment, or preview only. Ask only for missing information that blocks the next stage.
 
-For setup, gather the local project path or user's Fork URL, duplicated Places database link/ID, overview link/ID, city page links/IDs, and city names/country. Use `my-trip` unless a different trip identifier is requested. Allow publishing destination to remain undecided during preview.
+For setup, accept the source template URL, user's Fork URL, or local project path as the starting point. Guide missing preparation progressively; do not require a Fork, duplicated Notion pages, or all IDs before starting. Once the project is available, gather duplicated Places database link/ID, overview link/ID, city page links/IDs, and city names/country. Use `my-trip` unless a different trip identifier is requested. Allow publishing destination to remain undecided during preview.
 
-Use the existing local project when available. If only a repository URL is supplied, clone into an agreed directory without overwriting an existing directory. If the source is the author's template rather than the user's Fork, local preview may proceed, but do not configure writes to the author's remote.
+Use the existing local project when available. If only a repository URL is supplied, clone into an agreed directory without overwriting an existing directory. If the source is the author's template rather than the user's Fork, local preview may proceed, but do not configure writes to the author's remote. Read the source repository README and instructions before setup, agree on a destination, and clone only into a new or confirmed existing directory. Guide the user to duplicate the README-linked Notion template and authorize it, without duplicating or editing Notion on their behalf unless authorized. A personal Fork is needed only when choosing that repository/publishing workflow; guide its preparation then, with authorization before remote changes.
 
-Read `README.md`, `package.json`, `trips.config.js`, and repository instructions. Run `git status --short` when Git is available. Do not assume an installation path, personal page IDs, the original Australia trip, or previous conversation context.
+Read `README.md` (English) or `README.zh.md` (Chinese), `package.json`, `trips.config.js`, and repository instructions. Run `git status --short` when Git is available. Do not assume an installation path, personal page IDs, the original Australia trip, or previous conversation context.
 
 If the project is absent, do not use an arbitrary remote template. Obtain its source URL from the user or the current repository's README.
 
@@ -37,7 +37,9 @@ Check Node.js first. This template requires Node.js 20.9+. Use an available comp
 
 Install missing dependencies with `npm ci` when the lockfile is present, otherwise explain the missing lockfile before choosing an installation method. Do not reinstall an already working dependency tree without cause.
 
-Run from the project root:
+For a bundled sample preview, use the existing `data/my-trip*.json` snapshot and matching sample city configuration. Do not request a Notion Token, duplicate pages, run the config/network checks, or fetch content. After checking Node and dependencies, run the data check, build, build check, and preview commands in stages 3–4, omitting fetch. Preserve any personal trip configuration/data: if they have replaced the sample, do not overwrite them or relabel them as bundled examples. Report missing sample files rather than borrowing another project's data. A sample preview is optional; users may go directly to personal Notion setup. Both paths generate the same website features. When switching to personal content, follow the full configuration and access workflow before fetching.
+
+For personal Notion setup, run from the project root:
 
 ```bash
 node scripts/check-project.js --trip my-trip --stage config
@@ -99,10 +101,12 @@ Check console errors when browser tooling permits. File checks cannot establish 
 
 For a refresh, reuse settings and credentials, then repeat stages 3–4. Check the actual requested change in the browser. Notion edits do not update the website until fetch/build and subsequent publishing occur.
 
-For appearance changes, read the README's 自定义 section. City color precedence is recognized Notion color → `cityColors` configuration → automatic palette. Do not edit a lower-priority setting and claim success while a Notion override remains. Ask before editing Notion; offer a configuration change when appropriate, explaining any override. Reuse the existing color parser rather than inventing mappings.
+For appearance changes, read the README's Customization / 自定义 section. City color precedence is recognized Notion color → `cityColors` configuration → automatic palette. Do not edit a lower-priority setting and claim success while a Notion override remains. Ask before editing Notion; offer a configuration change when appropriate, explaining any override. Reuse the existing color parser rather than inventing mappings.
 
 ## 6. Finish with an evidence-based handoff
 
 Report the preview URL, checks completed, remaining issues, and whether anything was published. Keep failure explanations actionable and concise. Report known dependency advisories; do not force upgrades or present a vulnerable dependency tree as security-validated.
 
 The first version ends at local preview. For publication requests, read the current repository's relevant README/COS guide, explain the proposed destination and public content, then obtain explicit authorization for commit/push/publication as applicable. These deployment paths still require separate live acceptance; skill availability is not evidence of deployment success.
+
+For COS publication, configure `cosUrl` as the bucket upload endpoint and `siteUrl` as the public website root. Follow `docs/cos-setup.md` for custom domain/HTTPS requirements, checks, and online acceptance. The deploy command builds and uploads but does not fetch or validate data automatically; it overwrites matching objects without removing old ones. Existing GitHub Actions target Pages, not COS. Cost alerts and traffic protection are optional user choices, not publishing gates. Reuse authorization already provided for the same action and scope.
