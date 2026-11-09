@@ -35,6 +35,10 @@
     .notion-content p  { font-family: 'Noto Serif SC', Georgia, 'PingFang SC', serif; font-size: 1em; line-height: 1.6; color: #333; margin-bottom: 6px; }
     .notion-content ul, .notion-content ol { padding-left: 18px; margin-bottom: 6px; }
     .notion-content li { font-family: 'Noto Serif SC', Georgia, 'PingFang SC', serif; font-size: 1em; line-height: 1.6; color: #333; margin-bottom: 2px; }
+    /* 优化攻略断行：正文减少过短尾行，短标题与列表保持行长均衡。 */
+    .notion-content p { text-wrap: pretty; }
+    .notion-content :is(h1, h2, h3, li) { text-wrap: balance; }
+
     .notion-content hr { border: none; border-top: 1px solid #eee; margin: 12px 0; }
     .notion-content :first-child { margin-top: 0; }
 
